@@ -18,7 +18,7 @@
  * Note: <Outlet /> est le point d'injection des pages définies dans routes.ts
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { Outlet } from 'react-router';
 import { Sidebar } from './Sidebar';
 import { TopHeader } from './TopHeader';
@@ -31,42 +31,22 @@ import { signInWithEthereum } from '../../../lib/siwe';
 import { showError } from '../../../lib/toast';
 
 /**
- * Rendered once the wallet is unlocked. Performs the SIWE sign-in so the
- * backend auth token is set before the data contexts start fetching.
+ * Rendered once the wallet is unlocked. Fires the SIWE sign-in in the
+ * background so the backend auth token is set when a backend is available.
+ *
+ * Crucially this does NOT block rendering: if the backend is unreachable
+ * (or not deployed yet) the dashboard still loads. Authenticated calls
+ * simply 401 and data contexts fall back to empty/public data.
  */
 function AuthenticatedApp() {
   const { address, signMessage } = useWallet();
-  const [authState, setAuthState] = useState<'pending' | 'ready'>('pending');
 
   useEffect(() => {
-    let cancelled = false;
     if (!address) return;
-    (async () => {
-      try {
-        await signInWithEthereum(address, signMessage);
-      } catch (err: any) {
-        // Sign-in failure is non-blocking: the dashboard still renders and
-        // public endpoints keep working. Authenticated calls will simply 401.
-        showError(err?.message ?? 'Sign-in failed — some data may be unavailable');
-      } finally {
-        if (!cancelled) setAuthState('ready');
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
+    void signInWithEthereum(address, signMessage).catch((err: any) => {
+      showError(err?.message ?? 'Sign-in failed — some data may be unavailable');
+    });
   }, [address, signMessage]);
-
-  if (authState === 'pending') {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-[#F4F5FF]">
-        <div className="flex flex-col items-center gap-3">
-          <div className="h-10 w-10 animate-spin rounded-full border-4 border-[#493FEE]/20 border-t-[#493FEE]" />
-          <p className="text-sm text-gray-500">Signing in to TaskFi…</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <AgentsProvider>

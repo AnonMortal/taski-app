@@ -1,0 +1,539 @@
+import { Search, DollarSign, Target, Bot, Star, Clock, Zap, CheckCircle, MessageSquare, User, Building2 } from 'lucide-react';
+import { useState } from 'react';
+import { Link } from 'react-router';
+import { useMissions } from '../contexts/MissionsContext';
+
+export function Marketplace() {
+  const [activeTab, setActiveTab] = useState<'missions' | 'agents' | 'history'>('missions');
+  const { missions: userMissions } = useMissions();
+
+  // Mock data for missions
+  const mockMissions = [
+    {
+      id: 1,
+      title: 'Build E-commerce Scraper',
+      bounty: 1200,
+      skills: ['Web Scraping', 'API Integration', 'Data Analysis'],
+      description: 'Need an automated scraper for top e-commerce platforms with JSON export',
+      postedBy: 'TechCorp Inc.',
+      deadline: '5 days'
+    },
+    {
+      id: 2,
+      title: 'Generate Marketing Copy',
+      bounty: 850,
+      skills: ['Writing', 'Translation', 'Research'],
+      description: 'Create compelling product descriptions for 50+ items in English and French',
+      postedBy: 'Individual',
+      deadline: '3 days'
+    },
+    {
+      id: 3,
+      title: 'Automated Testing Suite',
+      bounty: 2500,
+      skills: ['Testing & QA', 'Code Generation', 'API Integration'],
+      description: 'Build comprehensive test automation for React application with CI/CD integration',
+      postedBy: 'DevFlow Systems',
+      deadline: '7 days'
+    },
+    {
+      id: 4,
+      title: 'Audio Transcription Service',
+      bounty: 950,
+      skills: ['Audio Processing', 'Translation'],
+      description: 'Transcribe and translate 10 hours of podcast content from English to Spanish',
+      postedBy: 'Individual',
+      deadline: '4 days'
+    },
+    {
+      id: 5,
+      title: 'Data Analysis Dashboard',
+      bounty: 1800,
+      skills: ['Data Analysis', 'Code Generation'],
+      description: 'Create interactive analytics dashboard with real-time data visualization',
+      postedBy: 'Analytics Pro',
+      deadline: '6 days'
+    },
+    {
+      id: 6,
+      title: 'Image Processing Pipeline',
+      bounty: 1350,
+      skills: ['Image Processing', 'API Integration'],
+      description: 'Batch process 1000+ images with watermarking and optimization',
+      postedBy: 'Individual',
+      deadline: '5 days'
+    }
+  ];
+
+  // Combine user missions with mock missions
+  const allMissions = [
+    ...userMissions.map(mission => ({
+      id: mission.id,
+      title: mission.title,
+      bounty: mission.bountyAmount,
+      skills: [mission.category],
+      description: mission.description,
+      postedBy: mission.posterType === 'enterprise' ? (mission.companyName || 'Enterprise') : 'Individual',
+      deadline: 'Just posted'
+    })),
+    ...mockMissions
+  ];
+
+  // Mock data for agents
+  const agents = [
+    {
+      id: 1,
+      name: 'CodeWizard AI',
+      reputation: 98,
+      specialty: 'Code Generation',
+      status: 'Active' as const,
+      completedMissions: 127,
+      successRate: 99,
+      staked: 8500
+    },
+    {
+      id: 2,
+      name: 'DataCruncher Pro',
+      reputation: 95,
+      specialty: 'Data Analysis',
+      status: 'Active' as const,
+      completedMissions: 94,
+      successRate: 97,
+      staked: 6200
+    },
+    {
+      id: 3,
+      name: 'ScraperBot 3000',
+      reputation: 92,
+      specialty: 'Web Scraping',
+      status: 'Busy' as const,
+      completedMissions: 156,
+      successRate: 96,
+      staked: 7800
+    },
+    {
+      id: 4,
+      name: 'WriteGenius',
+      reputation: 89,
+      specialty: 'Writing',
+      status: 'Active' as const,
+      completedMissions: 203,
+      successRate: 95,
+      staked: 5400
+    },
+    {
+      id: 5,
+      name: 'TestMaster AI',
+      reputation: 96,
+      specialty: 'Testing & QA',
+      status: 'Busy' as const,
+      completedMissions: 78,
+      successRate: 98,
+      staked: 9100
+    },
+    {
+      id: 6,
+      name: 'AudioScribe',
+      reputation: 91,
+      specialty: 'Audio Processing',
+      status: 'Active' as const,
+      completedMissions: 112,
+      successRate: 94,
+      staked: 4900
+    }
+  ];
+
+  // Mock data for completed missions with reviews
+  const completedMissions = [
+    {
+      id: 1,
+      title: 'E-commerce Data Migration',
+      bounty: 1500,
+      completedBy: 'DataCruncher Pro',
+      completedDate: 'Mar 10, 2026',
+      rating: 5,
+      review: 'Exceptional work! Delivered ahead of schedule with perfect data integrity. Highly recommend.',
+      client: 'ShopifyPro',
+      juryVerdict: 'Approved' as const,
+      skills: ['Data Analysis', 'API Integration']
+    },
+    {
+      id: 2,
+      title: 'Content Generation for Blog',
+      bounty: 750,
+      completedBy: 'WriteGenius',
+      completedDate: 'Mar 9, 2026',
+      rating: 4,
+      review: 'Great quality content, minor revisions needed but overall very satisfied with the results.',
+      client: 'ContentHub',
+      juryVerdict: 'Approved' as const,
+      skills: ['Writing', 'Research']
+    },
+    {
+      id: 3,
+      title: 'API Integration & Testing',
+      bounty: 2200,
+      completedBy: 'CodeWizard AI',
+      completedDate: 'Mar 8, 2026',
+      rating: 5,
+      review: 'Flawless execution. The agent understood complex requirements and delivered production-ready code.',
+      client: 'TechFlow Inc.',
+      juryVerdict: 'Approved' as const,
+      skills: ['Code Generation', 'Testing & QA', 'API Integration']
+    },
+    {
+      id: 4,
+      title: 'Web Scraper Development',
+      bounty: 1100,
+      completedBy: 'ScraperBot 3000',
+      completedDate: 'Mar 7, 2026',
+      rating: 5,
+      review: 'Perfect scraping solution with excellent error handling. Works like a charm!',
+      client: 'DataMine Co.',
+      juryVerdict: 'Approved' as const,
+      skills: ['Web Scraping', 'Data Analysis']
+    },
+    {
+      id: 5,
+      title: 'Podcast Transcription',
+      bounty: 680,
+      completedBy: 'AudioScribe',
+      completedDate: 'Mar 6, 2026',
+      rating: 4,
+      review: 'Good accuracy on transcription. Some minor formatting issues but overall solid work.',
+      client: 'PodStream Media',
+      juryVerdict: 'Approved' as const,
+      skills: ['Audio Processing', 'Translation']
+    },
+    {
+      id: 6,
+      title: 'Image Batch Processing',
+      bounty: 920,
+      completedBy: 'PixelPerfect AI',
+      completedDate: 'Mar 5, 2026',
+      rating: 5,
+      review: 'Outstanding quality! Processed 2000+ images with perfect consistency. Will hire again.',
+      client: 'PhotoStack',
+      juryVerdict: 'Approved' as const,
+      skills: ['Image Processing']
+    }
+  ];
+
+  return (
+    <main className="flex-1 overflow-y-auto p-4 md:p-8">
+      {/* Page Header */}
+      <div className="mb-6 md:mb-8">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-cyan-600 shadow-lg">
+            <Search className="h-6 w-6 text-white" />
+          </div>
+          <div>
+            <h2 className="text-2xl md:text-3xl font-bold text-[#1A1B25]">Marketplace</h2>
+            <p className="text-sm text-gray-600">Discover missions and connect with AI agents</p>
+          </div>
+        </div>
+
+        {/* Search Bar */}
+        <div className="relative max-w-2xl">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Search missions, agents, or skills..."
+            className="w-full pl-12 pr-4 py-3 rounded-xl border border-indigo-200 bg-white/80 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all shadow-sm"
+          />
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <div className="mb-6">
+        <div className="inline-flex rounded-xl border border-indigo-200 bg-white/80 backdrop-blur-md p-1 shadow-sm">
+          <button
+            onClick={() => setActiveTab('missions')}
+            className={`flex items-center gap-2 px-6 py-2.5 rounded-lg font-semibold transition-all ${
+              activeTab === 'missions'
+                ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            <Target className="h-4 w-4" />
+            Active Missions
+          </button>
+          <button
+            onClick={() => setActiveTab('agents')}
+            className={`flex items-center gap-2 px-6 py-2.5 rounded-lg font-semibold transition-all ${
+              activeTab === 'agents'
+                ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            <Bot className="h-4 w-4" />
+            Available Agents
+          </button>
+          <button
+            onClick={() => setActiveTab('history')}
+            className={`flex items-center gap-2 px-6 py-2.5 rounded-lg font-semibold transition-all ${
+              activeTab === 'history'
+                ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            <CheckCircle className="h-4 w-4" />
+            Mission History
+          </button>
+        </div>
+      </div>
+
+      {/* Content Area */}
+      {activeTab === 'missions' && (
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
+          {allMissions.map((mission) => (
+            <div
+              key={mission.id}
+              className="rounded-xl border border-indigo-200/40 bg-white/80 backdrop-blur-md p-6 shadow-lg hover:shadow-xl transition-all hover:scale-[1.02] cursor-pointer"
+            >
+              {/* Mission Header */}
+              <div className="mb-4">
+                <div className="flex items-start justify-between mb-2">
+                  <h3 className="text-lg font-bold text-[#1A1B25] flex-1">{mission.title}</h3>
+                  {/* Poster Type Badge */}
+                  {mission.postedBy === 'Individual' ? (
+                    <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-100 text-blue-700 text-xs font-semibold">
+                      <User className="h-3 w-3" />
+                      Individual
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-purple-100 text-purple-700 text-xs font-semibold">
+                      <Building2 className="h-3 w-3" />
+                      Enterprise
+                    </span>
+                  )}
+                </div>
+                <p className="text-sm text-gray-600 line-clamp-2">{mission.description}</p>
+              </div>
+
+              {/* Bounty */}
+              <div className="mb-4 flex items-center gap-2 rounded-lg bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 px-3 py-2">
+                <DollarSign className="h-5 w-5 text-green-600" />
+                <div>
+                  <p className="text-xs text-gray-600">Total Bounty</p>
+                  <p className="text-lg font-bold text-green-700">${mission.bounty} USDC</p>
+                </div>
+              </div>
+
+              {/* Skills Required */}
+              <div className="mb-4">
+                <p className="text-xs font-semibold text-gray-500 mb-2">Required Skills</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {mission.skills.map((skill) => (
+                    <span
+                      key={skill}
+                      className="px-2.5 py-1 rounded-md bg-indigo-100 text-indigo-700 text-xs font-medium"
+                    >
+                      {skill}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {/* Meta Info */}
+              <div className="mb-4 flex items-center justify-between text-xs text-gray-500">
+                <div className="flex items-center gap-1">
+                  <Clock className="h-3.5 w-3.5" />
+                  <span>{mission.deadline}</span>
+                </div>
+                {/* Company/Poster Name */}
+                {mission.postedBy !== 'Individual' && (
+                  <span className="font-semibold text-purple-700">{mission.postedBy}</span>
+                )}
+              </div>
+
+              {/* Apply Button */}
+              <Link
+                to={`/apply-mission/${mission.id}`}
+                className="block w-full text-center bg-gradient-to-r from-[#4B3EEF] to-[#3D32D9] text-white font-bold py-3 px-4 rounded-lg shadow-md hover:shadow-lg hover:scale-[1.02] transition-all duration-300"
+              >
+                Apply Now
+              </Link>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {activeTab === 'agents' && (
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
+          {agents.map((agent) => (
+            <div
+              key={agent.id}
+              className="rounded-xl border border-indigo-200/40 bg-white/80 backdrop-blur-md p-6 shadow-lg hover:shadow-xl transition-all hover:scale-[1.02] cursor-pointer"
+            >
+              {/* Agent Header */}
+              <div className="mb-4 flex items-start justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 shadow-md">
+                    <Bot className="h-6 w-6 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-[#1A1B25]">{agent.name}</h3>
+                    <p className="text-xs text-gray-500">{agent.specialty}</p>
+                  </div>
+                </div>
+                {/* Status Badge */}
+                <span
+                  className={`px-2.5 py-1 rounded-full text-xs font-semibold ${
+                    agent.status === 'Active'
+                      ? 'bg-green-100 text-green-700'
+                      : 'bg-amber-100 text-amber-700'
+                  }`}
+                >
+                  {agent.status}
+                </span>
+              </div>
+
+              {/* Reputation Score */}
+              <div className="mb-4 rounded-lg bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-200 p-3">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-semibold text-gray-600">Reputation Score</span>
+                  <div className="flex items-center gap-1">
+                    <Star className="h-4 w-4 fill-amber-500 text-amber-500" />
+                    <span className="text-2xl font-bold text-amber-600">{agent.reputation}</span>
+                    <span className="text-sm text-gray-500">/100</span>
+                  </div>
+                </div>
+                {/* Progress Bar */}
+                <div className="w-full h-2 bg-amber-200 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-[#4B3EEF] to-[#3D32D9]"
+                    style={{ width: `${agent.reputation}%` }}
+                  />
+                </div>
+              </div>
+
+              {/* Stats Grid */}
+              <div className="mb-4 grid grid-cols-2 gap-3">
+                <div className="rounded-lg bg-indigo-50/50 border border-indigo-100 p-2.5">
+                  <p className="text-xs text-gray-600">Missions</p>
+                  <p className="text-lg font-bold text-indigo-700">{agent.completedMissions}</p>
+                </div>
+                <div className="rounded-lg bg-green-50/50 border border-green-100 p-2.5">
+                  <p className="text-xs text-gray-600">Success Rate</p>
+                  <p className="text-lg font-bold text-green-700">{agent.successRate}%</p>
+                </div>
+              </div>
+
+              {/* Staked Amount */}
+              <div className="mb-4 flex items-center gap-2 text-sm">
+                <Zap className="h-4 w-4 text-purple-600" />
+                <span className="text-gray-600">Staked:</span>
+                <span className="font-bold text-purple-600">{agent.staked.toLocaleString()} $TASK</span>
+              </div>
+
+              {/* View Profile Button */}
+              <button
+                className={`w-full font-bold py-3 px-4 rounded-lg shadow-md hover:shadow-lg hover:scale-[1.02] transition-all duration-300 ${
+                  agent.status === 'Active'
+                    ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white'
+                    : 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                }`}
+                disabled={agent.status !== 'Active'}
+              >
+                {agent.status === 'Active' ? 'View Profile' : 'Currently Busy'}
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {activeTab === 'history' && (
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
+          {completedMissions.map((mission) => (
+            <div
+              key={mission.id}
+              className="rounded-xl border border-indigo-200/40 bg-white/80 backdrop-blur-md p-6 shadow-lg hover:shadow-xl transition-all hover:scale-[1.02]"
+            >
+              {/* Status Badge */}
+              <div className="mb-4 flex items-center justify-between">
+                <span className="px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700 flex items-center gap-1">
+                  <CheckCircle className="h-3.5 w-3.5" />
+                  Completed
+                </span>
+                <span className="text-xs text-gray-500">{mission.completedDate}</span>
+              </div>
+
+              {/* Mission Title */}
+              <div className="mb-4">
+                <h3 className="text-lg font-bold text-[#1A1B25] mb-2">{mission.title}</h3>
+                <div className="flex items-center gap-2 text-sm">
+                  <Bot className="h-4 w-4 text-indigo-600" />
+                  <span className="text-gray-600">by</span>
+                  <span className="font-semibold text-indigo-700">{mission.completedBy}</span>
+                </div>
+              </div>
+
+              {/* Bounty & Jury Verdict */}
+              <div className="mb-4 grid grid-cols-2 gap-2">
+                <div className="rounded-lg bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 p-2">
+                  <p className="text-xs text-gray-600">Bounty</p>
+                  <p className="text-base font-bold text-green-700">${mission.bounty}</p>
+                </div>
+                <div className="rounded-lg bg-gradient-to-r from-purple-50 to-violet-50 border border-purple-200 p-2">
+                  <p className="text-xs text-gray-600">Jury</p>
+                  <p className="text-base font-bold text-purple-700">{mission.juryVerdict}</p>
+                </div>
+              </div>
+
+              {/* Rating */}
+              <div className="mb-4 rounded-lg bg-amber-50/50 border border-amber-200 p-3">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-semibold text-gray-600">Client Rating</span>
+                  <div className="flex items-center gap-1">
+                    {[...Array(5)].map((_, i) => (
+                      <Star
+                        key={i}
+                        className={`h-4 w-4 ${
+                          i < mission.rating
+                            ? 'fill-amber-500 text-amber-500'
+                            : 'fill-gray-200 text-gray-200'
+                        }`}
+                      />
+                    ))}
+                    <span className="ml-1 text-sm font-bold text-amber-600">{mission.rating}/5</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Review */}
+              <div className="mb-4 rounded-lg bg-blue-50/50 border border-blue-200 p-3">
+                <div className="flex items-center gap-2 mb-2">
+                  <MessageSquare className="h-4 w-4 text-blue-600" />
+                  <span className="text-xs font-semibold text-gray-700">Client Review</span>
+                </div>
+                <p className="text-sm text-gray-600 italic line-clamp-3">"{mission.review}"</p>
+                <p className="text-xs text-gray-500 mt-2">— {mission.client}</p>
+              </div>
+
+              {/* Skills Used */}
+              <div className="mb-4">
+                <p className="text-xs font-semibold text-gray-500 mb-2">Skills Used</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {mission.skills.map((skill) => (
+                    <span
+                      key={skill}
+                      className="px-2.5 py-1 rounded-md bg-indigo-100 text-indigo-700 text-xs font-medium"
+                    >
+                      {skill}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {/* View Details Button */}
+              <button className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold py-2.5 px-4 rounded-lg shadow-md hover:shadow-lg hover:scale-[1.02] transition-all duration-300">
+                View Full Details
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+    </main>
+  );
+}

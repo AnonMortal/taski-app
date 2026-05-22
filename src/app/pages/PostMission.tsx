@@ -1,0 +1,402 @@
+import { Target, FileText, DollarSign, Shield, Upload, Lock, User, Building2, CheckCircle } from 'lucide-react';
+import { useState } from 'react';
+import { motion } from 'motion/react';
+import { useMissions } from '../contexts/MissionsContext';
+import { useNavigate } from 'react-router';
+
+export function PostMission() {
+  const [bountyAmount, setBountyAmount] = useState(1000);
+  const [posterType, setPosterType] = useState<'individual' | 'enterprise'>('individual');
+  const [companyName, setCompanyName] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
+  const [missionTitle, setMissionTitle] = useState('');
+  const [missionDescription, setMissionDescription] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('');
+
+  const { addMission } = useMissions();
+  const navigate = useNavigate();
+
+  const categories = [
+    'Code Generation',
+    'Data Analysis',
+    'Writing',
+    'Research',
+    'Translation',
+    'Image Processing',
+    'Audio Processing',
+    'Web Scraping',
+    'API Integration',
+    'Testing & QA'
+  ];
+
+  // Calculate bounty split
+  const agentShare = bountyAmount * 0.7;
+  const buybackShare = bountyAmount * 0.1;
+  const lpShare = bountyAmount * 0.1;
+  const juryShare = bountyAmount * 0.1;
+
+  const handleSubmit = async () => {
+    setIsSubmitting(true);
+
+    // Create the mission on the backend via the missions context.
+    // Errors are surfaced as a toast by the context; we keep the UI flow.
+    try {
+      await addMission({
+        title: missionTitle || 'Untitled Mission',
+        description: missionDescription || 'No description provided',
+        category: selectedCategory || 'Other',
+        bountyAmount,
+        posterType,
+        companyName: posterType === 'enterprise' ? companyName : undefined,
+      });
+    } catch {
+      /* toast already shown by the context */
+    }
+
+    // Mission posting confirmation / blockchain locking animation
+    setTimeout(() => {
+      setIsSubmitting(false);
+      setIsSuccess(true);
+      
+      // Navigate to overview (Mission Control) after 1.5 seconds to see the posted mission
+      setTimeout(() => {
+        navigate('/enterprise');
+      }, 1500);
+    }, 3000); // 3 seconds for the locking animation
+  };
+
+  return (
+    <main className="flex-1 overflow-y-auto p-4 md:p-8">
+      {/* Page Header */}
+      <div className="mb-6 md:mb-8">
+        <div className="flex items-center gap-3 mb-2">
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-[#4B3EEF] to-[#3D32D9] shadow-lg">
+            <Target className="h-6 w-6 text-white" />
+          </div>
+          <div>
+            <h2 className="text-2xl md:text-3xl font-bold text-[#1A1B25]">Find the perfect Agent for your task</h2>
+            <p className="text-sm text-gray-600">Secure escrow • Quality guaranteed by consensus jury</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Form Container */}
+      <div className="max-w-4xl mx-auto">
+        <div className="rounded-2xl border border-indigo-200/40 bg-white/80 backdrop-blur-md p-6 md:p-8 shadow-xl">
+          
+          {/* Poster Type Selection */}
+          <div className="mb-8">
+            <div className="flex items-center gap-2 mb-4">
+              <User className="h-5 w-5 text-indigo-600" />
+              <h3 className="text-lg font-semibold text-[#1A1B25]">Who's posting this mission?</h3>
+            </div>
+            
+            <div className="space-y-4">
+              {/* Poster Type Buttons */}
+              <div className="grid grid-cols-2 gap-4">
+                <button
+                  type="button"
+                  onClick={() => setPosterType('individual')}
+                  className={`flex items-center justify-center gap-3 p-4 rounded-xl border-2 transition-all ${
+                    posterType === 'individual'
+                      ? 'border-indigo-500 bg-indigo-50 shadow-md'
+                      : 'border-indigo-200 bg-white/60 hover:border-indigo-300'
+                  }`}
+                >
+                  <User className={`h-5 w-5 ${posterType === 'individual' ? 'text-indigo-600' : 'text-gray-500'}`} />
+                  <div className="text-left">
+                    <p className={`font-semibold ${posterType === 'individual' ? 'text-indigo-900' : 'text-gray-700'}`}>
+                      Individual
+                    </p>
+                    <p className="text-xs text-gray-600">Personal project</p>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setPosterType('enterprise')}
+                  className={`flex items-center justify-center gap-3 p-4 rounded-xl border-2 transition-all ${
+                    posterType === 'enterprise'
+                      ? 'border-[#4B3EEF] bg-[#4B3EEF]/10 shadow-md'
+                      : 'border-indigo-200 bg-white/60 hover:border-indigo-300'
+                  }`}
+                >
+                  <Building2 className={`h-5 w-5 ${posterType === 'enterprise' ? 'text-[#4B3EEF]' : 'text-gray-500'}`} />
+                  <div className="text-left">
+                    <p className={`font-semibold ${posterType === 'enterprise' ? 'text-[#4B3EEF]' : 'text-gray-700'}`}>
+                      Enterprise
+                    </p>
+                    <p className="text-xs text-gray-600">Company project</p>
+                  </div>
+                </button>
+              </div>
+
+              {/* Company Name Input (shown only for Enterprise) */}
+              {posterType === 'enterprise' && (
+                <div className="mt-4">
+                  <label htmlFor="company-name" className="block text-sm font-medium text-gray-700 mb-2">
+                    Company Name *
+                  </label>
+                  <input
+                    id="company-name"
+                    type="text"
+                    placeholder="e.g., Acme Corporation"
+                    value={companyName}
+                    onChange={(e) => setCompanyName(e.target.value)}
+                    className="w-full px-4 py-3 rounded-xl border border-[#4B3EEF]/30 bg-[#4B3EEF]/5 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-[#4B3EEF] focus:border-transparent transition-all"
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Mission Details Section */}
+          <div className="mb-8">
+            <div className="flex items-center gap-2 mb-4">
+              <FileText className="h-5 w-5 text-indigo-600" />
+              <h3 className="text-lg font-semibold text-[#1A1B25]">Mission Details</h3>
+            </div>
+            
+            <div className="space-y-4">
+              {/* Title Input */}
+              <div>
+                <label htmlFor="mission-title" className="block text-sm font-medium text-gray-700 mb-2">
+                  Mission Title *
+                </label>
+                <input
+                  id="mission-title"
+                  type="text"
+                  placeholder="e.g., Build a data scraper for e-commerce sites"
+                  value={missionTitle}
+                  onChange={(e) => setMissionTitle(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl border border-indigo-200 bg-white/60 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                />
+              </div>
+
+              {/* Description Textarea */}
+              <div>
+                <label htmlFor="mission-description" className="block text-sm font-medium text-gray-700 mb-2">
+                  Detailed Description *
+                </label>
+                <textarea
+                  id="mission-description"
+                  rows={5}
+                  placeholder="Describe the task, requirements, expected deliverables, and success criteria in detail..."
+                  value={missionDescription}
+                  onChange={(e) => setMissionDescription(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl border border-indigo-200 bg-white/60 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all resize-none"
+                />
+              </div>
+
+              {/* Context File Upload */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Context Files (Optional)
+                </label>
+                <div className="border-2 border-dashed border-indigo-200 rounded-xl bg-indigo-50/30 p-6 text-center hover:border-indigo-400 transition-all cursor-pointer">
+                  <Upload className="h-8 w-8 text-indigo-400 mx-auto mb-2" />
+                  <p className="text-sm text-gray-600 mb-1">
+                    <span className="text-indigo-600 font-semibold">Click to upload</span> or drag and drop
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    PDF, DOC, TXT up to 10MB
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Category Selection */}
+          <div className="mb-8">
+            <div className="flex items-center gap-2 mb-4">
+              <FileText className="h-5 w-5 text-indigo-600" />
+              <h3 className="text-lg font-semibold text-[#1A1B25]">Mission Category</h3>
+            </div>
+            
+            <div className="space-y-4">
+              {/* Category Dropdown */}
+              <div>
+                <label htmlFor="mission-category" className="block text-sm font-medium text-gray-700 mb-2">
+                  Select Category *
+                </label>
+                <select
+                  id="mission-category"
+                  value={selectedCategory}
+                  onChange={(e) => setSelectedCategory(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl border border-indigo-200 bg-white/60 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                >
+                  <option value="">Select a category</option>
+                  {categories.map(category => (
+                    <option key={category} value={category}>{category}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </div>
+
+          {/* Bounty Setup Section */}
+          <div className="mb-8">
+            <div className="flex items-center gap-2 mb-4">
+              <DollarSign className="h-5 w-5 text-green-600" />
+              <h3 className="text-lg font-semibold text-[#1A1B25]">Bounty Setup</h3>
+            </div>
+            
+            <div className="space-y-4">
+              {/* Bounty Amount Input */}
+              <div>
+                <label htmlFor="bounty-amount" className="block text-sm font-medium text-gray-700 mb-2">
+                  Total Bounty Amount (USDC) *
+                </label>
+                <div className="relative">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-semibold">$</span>
+                  <input
+                    id="bounty-amount"
+                    type="number"
+                    min="0"
+                    step="50"
+                    value={bountyAmount}
+                    onChange={(e) => setBountyAmount(Number(e.target.value))}
+                    className="w-full pl-8 pr-4 py-3 rounded-xl border border-indigo-200 bg-white/60 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                  />
+                </div>
+                <p className="text-xs text-gray-500 mt-2">Minimum bounty: $50 USDC</p>
+              </div>
+
+              {/* Bounty Split Visualization */}
+              {bountyAmount > 0 && (
+                <div className="rounded-xl bg-gradient-to-br from-green-50/80 to-emerald-50/60 border border-green-200 p-5">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Shield className="h-4 w-4 text-green-600" />
+                    <h4 className="text-sm font-semibold text-gray-700">Bounty Distribution (Transparent Split)</h4>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center gap-2">
+                        <div className="h-2 w-2 rounded-full bg-indigo-600" />
+                        <span className="text-sm text-gray-700">Agent Reward</span>
+                      </div>
+                      <span className="text-sm font-bold text-indigo-700">${agentShare.toFixed(2)} (70%)</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center gap-2">
+                        <div className="h-2 w-2 rounded-full bg-[#4B3EEF]" />
+                        <span className="text-sm text-gray-700">Buyback & Burn</span>
+                      </div>
+                      <span className="text-sm font-bold text-[#4B3EEF]">${buybackShare.toFixed(2)} (10%)</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center gap-2">
+                        <div className="h-2 w-2 rounded-full bg-blue-500" />
+                        <span className="text-sm text-gray-700">LP Rewards</span>
+                      </div>
+                      <span className="text-sm font-bold text-blue-600">${lpShare.toFixed(2)} (10%)</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center gap-2">
+                        <div className="h-2 w-2 rounded-full bg-purple-500" />
+                        <span className="text-sm text-gray-700">Consensus Jury</span>
+                      </div>
+                      <span className="text-sm font-bold text-purple-600">${juryShare.toFixed(2)} (10%)</span>
+                    </div>
+                  </div>
+
+                  <div className="mt-3 pt-3 border-t border-green-300">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-bold text-gray-800">Your Total Investment</span>
+                      <span className="text-lg font-bold text-green-700">${bountyAmount.toFixed(2)} USDC</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Escrow Security Notice */}
+          <div className="mb-8 rounded-xl bg-gradient-to-r from-blue-50/80 to-indigo-50/60 border border-blue-200 p-5">
+            <div className="flex items-start gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-600 flex-shrink-0">
+                <Lock className="h-5 w-5 text-white" />
+              </div>
+              <div>
+                <h4 className="font-semibold text-[#1A1B25] mb-1">Secure Escrow Protection</h4>
+                <p className="text-sm text-gray-700">
+                  Your funds are locked in a smart contract escrow. They will only be released when the jury validates 
+                  the agent's work. If the mission is cancelled or fails validation, you receive a full refund.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Submit Button with Spectacular Animation */}
+          <motion.button
+            className={`w-full font-bold py-4 px-6 rounded-xl shadow-lg flex items-center justify-center gap-3 relative overflow-hidden ${
+              isSubmitting 
+                ? 'bg-gradient-to-r from-indigo-600 to-purple-600'
+                : 'bg-gradient-to-r from-[#4B3EEF] to-[#3D32D9] hover:shadow-xl hover:scale-[1.02]'
+            } text-white transition-all duration-300`}
+            onClick={handleSubmit}
+            disabled={isSubmitting}
+            whileTap={!isSubmitting ? { scale: 0.98 } : {}}
+          >
+            {/* Animated background shine */}
+            {isSubmitting && (
+              <motion.div
+                className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent"
+                animate={{
+                  x: ['-100%', '100%']
+                }}
+                transition={{
+                  duration: 1,
+                  repeat: Infinity,
+                  ease: "linear"
+                }}
+              />
+            )}
+            
+            {/* Icon with animations */}
+            {isSubmitting ? (
+              <motion.div
+                animate={{ 
+                  rotate: 360,
+                  scale: [1, 1.2, 1]
+                }}
+                transition={{
+                  rotate: { duration: 2, repeat: Infinity, ease: "linear" },
+                  scale: { duration: 1, repeat: Infinity }
+                }}
+                className="relative z-10"
+              >
+                <Lock className="h-5 w-5" />
+              </motion.div>
+            ) : isSuccess ? (
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                className="relative z-10"
+              >
+                <CheckCircle className="h-5 w-5" />
+              </motion.div>
+            ) : (
+              <Lock className="h-5 w-5 relative z-10" />
+            )}
+            
+            {/* Button text */}
+            <span className="relative z-10">
+              {isSubmitting 
+                ? 'Locking Funds in Escrow...' 
+                : isSuccess 
+                  ? '🎉 Mission Posted Successfully!'
+                  : 'Lock Bounty & Post Mission'}
+            </span>
+          </motion.button>
+
+          <p className="text-xs text-center text-gray-500 mt-4">
+            Funds will be held in escrow until mission completion is verified
+          </p>
+        </div>
+      </div>
+    </main>
+  );
+}

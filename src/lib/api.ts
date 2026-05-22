@@ -1,0 +1,130 @@
+// TaskFi API client.
+// Base URL comes from VITE_API_URL (.env). Falls back to the production
+// backend domain if the env var is not set.
+const API_URL = import.meta.env.VITE_API_URL || "https://api.minesynergy.com";
+
+// Internal session storage key for the auth (JWT) token.
+const TOKEN_KEY = "synergy_auth_token";
+
+export function setAuthToken(token: string | null) {
+  if (token) {
+    sessionStorage.setItem(TOKEN_KEY, token);
+  } else {
+    sessionStorage.removeItem(TOKEN_KEY);
+  }
+}
+
+export function getAuthToken(): string | null {
+  return sessionStorage.getItem(TOKEN_KEY);
+}
+
+async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
+  const headers: Record<string, string> = {
+    ...(options.headers as Record<string, string>),
+  };
+
+  const token = getAuthToken();
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+
+  // Don't set Content-Type for FormData (browser sets it with boundary)
+  // Don't set Content-Type if no body (avoid Fastify empty JSON body error)
+  if (options.body && !(options.body instanceof FormData)) {
+    headers["Content-Type"] = "application/json";
+  }
+
+  const res = await fetch(`${API_URL}${path}`, {
+    ...options,
+    headers,
+  });
+
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({ error: "Request failed" }));
+    throw new Error(body.error || `HTTP ${res.status}`);
+  }
+
+  return res.json();
+}
+
+// TaskFi backend API surface
+export const api = {
+  auth: {
+    getNonce: (address: string) =>
+      request<{ nonce: string }>("/api/auth/nonce", {
+        method: "POST",
+        body: JSON.stringify({ address }),
+      }),
+    verify: (message: string, signature: string) =>
+      request<{ token: string; user: { id: string; walletAddress: string; role: string } }>("/api/auth/verify", {
+        method: "POST",
+        body: JSON.stringify({ message, signature }),
+      }),
+    registerAgent: () =>
+      request<{ token: string; user: { id: string; walletAddress: string; role: string } }>("/api/auth/register-agent", {
+        method: "POST",
+      }),
+  },
+
+  missions: {
+    list: (params?: { status?: string; category?: string; page?: number; limit?: number; showPrivate?: boolean }) => {
+      const query = new URLSearchParams();
+      if (params?.status) query.set("status", params.status);
+      if (params?.category) query.set("category", params.category);
+      if (params?.page) query.set("page", String(params.page));
+      if (params?.limit) query.set("limit", String(params.limit));
+      if (params?.showPrivate) query.set("showPrivate", "true");
+      const qs = query.toString();
+      return request<{ missions: any[]; total: number; page: number; limit: number }>(`/api/missions${qs ? `?${qs}` : ""}`);
+    },
+    nextId: () => request<{ nextId: number; dbMax: number; chainCount: number }>("/api/missions/next-id"),
+    my: () => request<{ missions: any[] }>("/api/missions/my"),
+    get: (id: string) => request<any>(`/api/missions/${id}`),
+    getResult: (id: string) => request<any>(`/api/missions/${id}/result`),
+    create: (formData: FormData) =>
+      request<any>("/api/missions", { method: "POST", body: formData }),
+    accept: (id: string) =>
+      request<any>(`/api/missions/${id}/accept`, { method: "POST" }),
+    submit: (id: string, formData: FormData) =>
+      request<any>(`/api/missions/${id}/submit`, { method: "POST", body: formData }),
+    validate: (id: string) =>
+      request<any>(`/api/missions/${id}/validate`, { method: "POST" }),
+    contest: (id: string, reason: string) =>
+      request<any>(`/api/missions/${id}/contest`, {
+        method: "POST",
+        body: JSON.stringify({ reason }),
+      }),
+    cancel: (id: string) =>
+      request<any>(`/api/missions/${id}/cancel`, { method: "POST" }),
+    bump: (id: string, additionalReward: number) =>
+      request<any>(`/api/missions/${id}/bump`, {
+        method: "POST",
+        body: JSON.stringify({ additionalReward }),
+      }),
+  },
+
+  agents: {
+    leaderboard: () => request<{ leaderboard: any[] }>("/api/agents/leaderboard"),
+    profile: (address: string) => request<any>(`/api/agents/${address}`),
+    pendingEarnings: () => request<{ pendingEarnings: string }>("/api/agents/pending-earnings"),
+    claim: () => request<any>("/api/agents/claim", { method: "POST" }),
+    // v2 — Agent Passport ERC-5192
+    passport: (address: string) => request<any>(`/api/agents/${address}/passport`),
+  },
+
+  enterprise: {
+    analytics: () => request<any>("/api/enterprise/analytics"),
+    topAgents: () => request<{ agents: any[] }>("/api/enterprise/top-agents"),
+    missions: () => request<{ missions: any[] }>("/api/enterprise/missions"),
+  },
+
+  account: {
+    profile: () => request<any>("/api/account/profile"),
+    stats: () => request<any>("/api/account/stats"),
+  },
+
+  public: {
+    stats: () => request<any>("/api/public/stats"),
+    leaderboard: () => request<{ leaderboard: any[] }>("/api/public/leaderboard"),
+  },
+};

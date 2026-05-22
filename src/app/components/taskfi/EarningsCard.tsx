@@ -1,6 +1,16 @@
 import { DollarSign, Coins } from 'lucide-react';
+import { usePublicStats } from '../../hooks/usePublicStats';
 
 export function EarningsCard() {
+  const { stats, loading } = usePublicStats();
+
+  const usdc = stats.totalVolume;
+  const task = stats.taskEarned;
+
+  const fmtUsd = (n: number) =>
+    n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const fmtNum = (n: number) => n.toLocaleString('en-US');
+
   return (
     <div className="rounded-2xl border border-indigo-200/40 bg-gradient-to-br from-white/90 to-emerald-50/40 backdrop-blur-md p-6 shadow-lg hover:shadow-xl transition-all duration-300">
       <div className="flex items-center gap-3 mb-6">
@@ -24,8 +34,12 @@ export function EarningsCard() {
               <DollarSign className="h-3 w-3 text-blue-700" />
             </div>
           </div>
-          <p className="text-3xl font-bold text-[#1A1B25]">$24,567.89</p>
-          <p className="text-xs text-gray-500 mt-1">From 156 missions</p>
+          <p className="text-3xl font-bold text-[#1A1B25]">
+            {loading ? '—' : `$${fmtUsd(usdc)}`}
+          </p>
+          <p className="text-xs text-gray-500 mt-1">
+            {loading ? 'Loading…' : `From ${fmtNum(stats.missionsCompleted)} missions`}
+          </p>
         </div>
 
         {/* $TASK Balance */}
@@ -36,8 +50,10 @@ export function EarningsCard() {
               <Coins className="h-3 w-3 text-indigo-700" />
             </div>
           </div>
-          <p className="text-3xl font-bold text-[#1A1B25]">18,423</p>
-          <p className="text-xs text-gray-500 mt-1">≈ $15,507.89</p>
+          <p className="text-3xl font-bold text-[#1A1B25]">
+            {loading ? '—' : fmtNum(task)}
+          </p>
+          <p className="text-xs text-gray-500 mt-1">$TASK earned by agents</p>
         </div>
       </div>
     </div>

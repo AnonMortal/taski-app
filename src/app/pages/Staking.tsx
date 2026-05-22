@@ -1,36 +1,72 @@
 import { DollarSign, TrendingUp, Bot, Target, Coins, Award, Clock } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useAgents } from '../contexts/AgentsContext';
+import { api } from '../../lib/api';
+
+interface StakingAgent {
+  id: number;
+  name: string;
+  currentStake: number;
+  priorityScore: number;
+  reputationMultiplier: number;
+}
+
+// Derive a priority score (50-95) from a stake amount on the 25K-100K range.
+const priorityFromStake = (stake: number) =>
+  Math.max(50, Math.min(95, 50 + Math.floor(((stake - 25000) / 75000) * 45)));
+// Derive a reputation multiplier (1.25x-2.0x) from a stake amount.
+const multiplierFromStake = (stake: number) =>
+  Math.round((1.25 + Math.max(0, Math.min(1, (stake - 25000) / 75000)) * 0.75) * 100) / 100;
 
 export function Staking() {
-  // Mock data for consolidated view
-  const totalStaked = 175000;
-  const totalRewards = 8750;
+  const { agents: rawAgents, loading: agentsLoading } = useAgents();
 
-  // Mock data for user's agents with staking
-  // État local pour gérer les stakes et recalculer metrics en temps réel
-  const [agents, setAgents] = useState([
-    {
-      id: 1,
-      name: 'CodeMaster Pro',
-      currentStake: 75000,
-      priorityScore: 95,
-      reputationMultiplier: 1.75
-    },
-    {
-      id: 2,
-      name: 'DataWizard AI',
-      currentStake: 60000,
-      priorityScore: 88,
-      reputationMultiplier: 1.6
-    },
-    {
-      id: 3,
-      name: 'ContentGenius',
-      currentStake: 40000,
-      priorityScore: 78,
-      reputationMultiplier: 1.4
-    }
-  ]);
+  // Portfolio totals come from the (auth-gated) account stats endpoint. On
+  // failure the page shows zeros instead of crashing.
+  const [accountStats, setAccountStats] = useState<{ totalStaked: number; totalRewards: number; taskRewards: number } | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    api.account
+      .stats()
+      .then((raw: any) => {
+        if (!active) return;
+        setAccountStats({
+          totalStaked: Number(raw?.totalStaked ?? raw?.staked ?? 0),
+          totalRewards: Number(raw?.totalRewards ?? raw?.totalEarned ?? raw?.usdcEarned ?? 0),
+          taskRewards: Number(raw?.taskRewards ?? raw?.taskEarned ?? 0),
+        });
+      })
+      .catch(() => {
+        if (active) setAccountStats({ totalStaked: 0, totalRewards: 0, taskRewards: 0 });
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  // Agent staking list comes from the backend leaderboard (AgentsContext).
+  // Local state mirrors it so the stake slider can recompute metrics live.
+  const [agents, setAgents] = useState<StakingAgent[]>([]);
+
+  useEffect(() => {
+    setAgents(
+      rawAgents.map((a, i): StakingAgent => {
+        const stake = a.currentStake > 0 ? a.currentStake : 25000;
+        return {
+          id: typeof a.id === 'number' ? a.id : i + 1,
+          name: a.name,
+          currentStake: stake,
+          priorityScore: priorityFromStake(stake),
+          reputationMultiplier: multiplierFromStake(stake),
+        };
+      }),
+    );
+  }, [rawAgents]);
+
+  const totalStaked = accountStats?.totalStaked ?? agents.reduce((s, a) => s + a.currentStake, 0);
+  const totalRewards = accountStats?.totalRewards ?? 0;
+  const taskRewards = accountStats?.taskRewards ?? 0;
 
   // Handler pour recalculer Priority Score et Reputation Multiplier quand le stake change
   const handleStakeChange = (agentId: number, newStake: number) => {
@@ -52,39 +88,18 @@ export function Staking() {
     }));
   };
 
-  // Mock data for rewards history
-  const rewardsHistory = [
-    {
-      id: 1,
-      date: '2023-10-01',
-      type: 'Mission Payout',
-      mission: 'Data Analysis',
-      agent: 'CodeMaster Pro',
-      usdc: 150,
-      synr: 100,
-      split: '70/10/10/10'
-    },
-    {
-      id: 2,
-      date: '2023-09-25',
-      type: 'Incentive',
-      mission: 'Content Creation',
-      agent: 'DataWizard AI',
-      usdc: 0,
-      synr: 50,
-      split: '70/10/10/10'
-    },
-    {
-      id: 3,
-      date: '2023-09-15',
-      type: 'Mission Payout',
-      mission: 'Market Research',
-      agent: 'ContentGenius',
-      usdc: 200,
-      synr: 150,
-      split: '70/10/10/10'
-    }
-  ];
+  // Rewards history: there is no dedicated transaction-log endpoint on the
+  // backend, so this list stays empty and the table shows an empty state.
+  const rewardsHistory: {
+    id: number;
+    date: string;
+    type: string;
+    mission: string;
+    agent: string;
+    usdc: number;
+    synr: number;
+    split: string;
+  }[] = [];
 
   return (
     <main className="flex-1 overflow-y-auto p-4 md:p-8">
@@ -141,7 +156,7 @@ export function Staking() {
               </div>
               <div className="text-2xl text-gray-300">+</div>
               <div>
-                <p className="text-2xl font-bold text-indigo-700">1,164</p>
+                <p className="text-2xl font-bold text-indigo-700">{taskRewards.toLocaleString()}</p>
                 <p className="text-xs text-gray-500">$TASK</p>
               </div>
             </div>
@@ -158,6 +173,16 @@ export function Staking() {
         <p className="text-sm text-gray-600 mb-4">Adjust stake amounts to boost Priority Score and Reputation Multiplier</p>
         
         <div className="space-y-4">
+          {agentsLoading && agents.length === 0 && (
+            <div className="rounded-xl border border-indigo-200/40 bg-white/80 backdrop-blur-md p-8 shadow-lg text-center">
+              <p className="text-sm text-gray-400">Loading agents…</p>
+            </div>
+          )}
+          {!agentsLoading && agents.length === 0 && (
+            <div className="rounded-xl border border-indigo-200/40 bg-white/80 backdrop-blur-md p-8 shadow-lg text-center">
+              <p className="text-sm text-gray-400">No staked agents yet.</p>
+            </div>
+          )}
           {agents.map((agent) => (
             <div
               key={agent.id}
@@ -254,6 +279,13 @@ export function Staking() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-indigo-100">
+                {rewardsHistory.length === 0 && (
+                  <tr>
+                    <td colSpan={7} className="px-6 py-10 text-center text-sm text-gray-400">
+                      No reward transactions yet.
+                    </td>
+                  </tr>
+                )}
                 {rewardsHistory.map((reward) => (
                   <tr key={reward.id} className="hover:bg-indigo-50/30 transition-colors">
                     <td className="px-6 py-4 whitespace-nowrap">

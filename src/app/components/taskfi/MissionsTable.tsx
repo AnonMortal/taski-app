@@ -18,48 +18,6 @@ interface Mission {
   executor?: AgentPassportMini;
 }
 
-const agentPassports: AgentPassportMini[] = [
-  { tokenId: '#0042', name: 'DataScraper_v2',   trustScore: 92, slashCount: 1 },
-  { tokenId: '#0017', name: 'SolidityAuditor',  trustScore: 98, slashCount: 0 },
-  { tokenId: '#0089', name: 'NLPEngine_v3',     trustScore: 85, slashCount: 2 },
-  { tokenId: '#0055', name: 'ContractDeployer', trustScore: 94, slashCount: 0 },
-];
-
-const mockMissions: Mission[] = [
-  {
-    id: '1',
-    name: 'Financial Data Analysis Q1 2026',
-    reward: 850,
-    status: 'auditing',
-    consensusVotes: ['valid', 'valid', 'valid', 'pending', 'pending'],
-    executor: agentPassports[0],
-  },
-  {
-    id: '2',
-    name: 'Web Scraping - E-commerce Product Data',
-    reward: 1200,
-    status: 'in-progress',
-    consensusVotes: ['valid', 'valid', 'reject', 'valid', 'pending'],
-    executor: agentPassports[1],
-  },
-  {
-    id: '3',
-    name: 'Natural Language Processing - Sentiment Analysis',
-    reward: 2400,
-    status: 'auditing',
-    consensusVotes: ['valid', 'valid', 'valid', 'valid', 'valid'],
-    executor: agentPassports[2],
-  },
-  {
-    id: '4',
-    name: 'Image Classification - Medical Diagnostics',
-    reward: 3500,
-    status: 'in-progress',
-    consensusVotes: ['valid', 'pending', 'pending', 'pending', 'pending'],
-    executor: agentPassports[3],
-  },
-];
-
 function TrustScorePill({ score, slashCount }: { score: number; slashCount: number }) {
   const color =
     score >= 90 ? 'text-green-700 bg-green-50 border-green-200'
@@ -120,20 +78,24 @@ const getStatusLabel = (status: string) => {
   return 'Completed';
 };
 
-export function MissionsTable() {
-  const { missions: userMissions } = useMissions();
+// Map the MissionsContext status vocabulary to the table status vocabulary.
+const mapStatus = (status: string): Mission['status'] => {
+  if (status === 'in-progress') return 'in-progress';
+  if (status === 'completed') return 'completed';
+  return 'pending';
+};
 
-  const allMissions: Mission[] = [
-    ...userMissions.map((mission, i) => ({
-      id: mission.id,
-      name: mission.title,
-      reward: mission.bountyAmount,
-      status: 'pending' as const,
-      consensusVotes: ['pending', 'pending', 'pending', 'pending', 'pending'] as ('valid' | 'reject' | 'pending')[],
-      executor: undefined,
-    })),
-    ...mockMissions,
-  ];
+export function MissionsTable() {
+  const { missions: userMissions, loading, error } = useMissions();
+
+  const allMissions: Mission[] = userMissions.map((mission) => ({
+    id: mission.id,
+    name: mission.title,
+    reward: mission.bountyAmount,
+    status: mapStatus(mission.status),
+    consensusVotes: ['pending', 'pending', 'pending', 'pending', 'pending'] as ('valid' | 'reject' | 'pending')[],
+    executor: undefined,
+  }));
 
   return (
     <div className="rounded-2xl border border-indigo-200/40 bg-white/80 backdrop-blur-md shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300">
@@ -167,6 +129,20 @@ export function MissionsTable() {
             </tr>
           </thead>
           <tbody className="divide-y divide-indigo-200/20">
+            {loading && allMissions.length === 0 && (
+              <tr>
+                <td colSpan={5} className="px-6 py-10 text-center text-sm text-gray-400">
+                  Loading missions…
+                </td>
+              </tr>
+            )}
+            {!loading && allMissions.length === 0 && (
+              <tr>
+                <td colSpan={5} className="px-6 py-10 text-center text-sm text-gray-400">
+                  {error ? 'Unable to load missions right now.' : 'No missions posted yet.'}
+                </td>
+              </tr>
+            )}
             {allMissions.map((mission) => (
               <tr key={mission.id} className="hover:bg-indigo-50/30 transition-all duration-200 cursor-pointer">
                 <td className="px-6 py-4">

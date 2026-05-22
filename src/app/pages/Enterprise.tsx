@@ -1,158 +1,115 @@
 import { Target, DollarSign, TrendingUp, Bot, Star, Clock, Users, Plus, Circle } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router';
 import { useMissions } from '../contexts/MissionsContext';
+import { api } from '../../lib/api';
+
+type JuryStatus = 'approved' | 'pending';
+const JURY_MODELS = ['GPT-4', 'Claude', 'Gemini', 'Llama', 'Mistral'];
+
+// Build a jury-consensus array from a mission status: completed missions show
+// all judges approved, anything in flight shows all pending. This is the only
+// status signal the public missions endpoint exposes.
+const juryFromStatus = (uiStatus: string): { model: string; status: JuryStatus }[] => {
+  const allApproved = uiStatus === 'Completed';
+  return JURY_MODELS.map(model => ({
+    model,
+    status: (allApproved ? 'approved' : 'pending') as JuryStatus,
+  }));
+};
+
+interface Analytics {
+  totalSpent: number;
+  activeMissions: number;
+  completedMissions: number;
+  averageRating: number;
+}
+
+interface TopAgent {
+  id: number | string;
+  name: string;
+  specialty: string;
+  completedForYou: number;
+  successRate: number;
+  avgRating: number;
+}
 
 export function Enterprise() {
   const { missions: userMissions } = useMissions();
 
-  // Mock data for analytics
-  const analytics = {
-    totalSpent: 24750,
-    activeMissions: 8,
-    completedMissions: 23,
-    averageRating: 4.8
+  const [analytics, setAnalytics] = useState<Analytics | null>(null);
+  const [topAgents, setTopAgents] = useState<TopAgent[]>([]);
+  const [agentsLoading, setAgentsLoading] = useState(true);
+
+  // Enterprise analytics + top agents come from the (auth-gated) enterprise
+  // endpoints. On failure the page degrades to an empty state instead of
+  // crashing — these routes require an authenticated enterprise session.
+  useEffect(() => {
+    let active = true;
+    api.enterprise
+      .analytics()
+      .then((raw: any) => {
+        if (!active) return;
+        setAnalytics({
+          totalSpent: Number(raw?.totalSpent ?? raw?.totalVolume ?? 0),
+          activeMissions: Number(raw?.activeMissions ?? 0),
+          completedMissions: Number(raw?.completedMissions ?? 0),
+          averageRating: Number(raw?.averageRating ?? raw?.avgScore ?? 0),
+        });
+      })
+      .catch(() => {
+        if (active) setAnalytics({ totalSpent: 0, activeMissions: 0, completedMissions: 0, averageRating: 0 });
+      });
+
+    api.enterprise
+      .topAgents()
+      .then((res: any) => {
+        if (!active) return;
+        const list = Array.isArray(res?.agents) ? res.agents : [];
+        setTopAgents(
+          list.map((a: any, i: number): TopAgent => ({
+            id: a?.id ?? a?.address ?? i,
+            name: a?.name ?? a?.displayName ?? `Agent #${i + 1}`,
+            specialty: a?.specialization ?? a?.specialty ?? 'General',
+            completedForYou: Number(a?.completedForYou ?? a?.completedMissions ?? 0),
+            successRate: Math.round(Number(a?.successRate ?? a?.winRate ?? 0)),
+            avgRating: Number(a?.avgRating ?? a?.avgScore ?? 0),
+          })),
+        );
+      })
+      .catch(() => {
+        if (active) setTopAgents([]);
+      })
+      .finally(() => {
+        if (active) setAgentsLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  // Map the MissionsContext status to the enterprise display vocabulary.
+  const mapMissionStatus = (s: string) => {
+    if (s === 'completed') return 'Completed' as const;
+    if (s === 'in-progress') return 'In Progress' as const;
+    return 'Finding Agent' as const;
   };
 
-  // Mock data for top performing agents
-  const topAgents = [
-    {
-      id: 1,
-      name: 'CodeWizard AI',
-      specialty: 'Code Generation',
-      completedForYou: 7,
-      successRate: 100,
-      avgRating: 5.0
-    },
-    {
-      id: 2,
-      name: 'DataCruncher Pro',
-      specialty: 'Data Analysis',
-      completedForYou: 5,
-      successRate: 100,
-      avgRating: 4.9
-    },
-    {
-      id: 3,
-      name: 'ScraperBot 3000',
-      specialty: 'Web Scraping',
-      completedForYou: 4,
-      successRate: 100,
-      avgRating: 4.8
-    },
-    {
-      id: 4,
-      name: 'WriteGenius',
-      specialty: 'Writing',
-      completedForYou: 3,
-      successRate: 100,
-      avgRating: 4.7
-    }
-  ];
-
-  // Mock data for user's posted missions with jury consensus
-  const mockPostedMissions = [
-    {
-      id: 1,
-      title: 'E-commerce Analytics Dashboard',
-      bounty: 2800,
-      status: 'In Progress' as const,
-      agent: 'CodeWizard AI',
-      postedDate: 'Mar 11, 2026',
-      deadline: '2 days',
-      juryConsensus: [
-        { model: 'GPT-4', status: 'approved' as const },
-        { model: 'Claude', status: 'approved' as const },
-        { model: 'Gemini', status: 'pending' as const },
-        { model: 'Llama', status: 'pending' as const },
-        { model: 'Mistral', status: 'pending' as const }
-      ]
-    },
-    {
-      id: 2,
-      title: 'Customer Data Migration',
-      bounty: 1900,
-      status: 'Under Review' as const,
-      agent: 'DataCruncher Pro',
-      postedDate: 'Mar 10, 2026',
-      deadline: '1 day',
-      juryConsensus: [
-        { model: 'GPT-4', status: 'approved' as const },
-        { model: 'Claude', status: 'approved' as const },
-        { model: 'Gemini', status: 'approved' as const },
-        { model: 'Llama', status: 'approved' as const },
-        { model: 'Mistral', status: 'pending' as const }
-      ]
-    },
-    {
-      id: 3,
-      title: 'API Integration Suite',
-      bounty: 3200,
-      status: 'In Progress' as const,
-      agent: 'CodeWizard AI',
-      postedDate: 'Mar 9, 2026',
-      deadline: '4 days',
-      juryConsensus: [
-        { model: 'GPT-4', status: 'approved' as const },
-        { model: 'Claude', status: 'pending' as const },
-        { model: 'Gemini', status: 'pending' as const },
-        { model: 'Llama', status: 'pending' as const },
-        { model: 'Mistral', status: 'pending' as const }
-      ]
-    },
-    {
-      id: 4,
-      title: 'Product Catalog Scraper',
-      bounty: 1500,
-      status: 'Finding Agent' as const,
-      agent: null,
-      postedDate: 'Mar 12, 2026',
-      deadline: '5 days',
-      juryConsensus: [
-        { model: 'GPT-4', status: 'pending' as const },
-        { model: 'Claude', status: 'pending' as const },
-        { model: 'Gemini', status: 'pending' as const },
-        { model: 'Llama', status: 'pending' as const },
-        { model: 'Mistral', status: 'pending' as const }
-      ]
-    },
-    {
-      id: 5,
-      title: 'Content Generation Pipeline',
-      bounty: 2100,
-      status: 'Completed' as const,
-      agent: 'WriteGenius',
-      postedDate: 'Mar 5, 2026',
-      deadline: 'Completed',
-      juryConsensus: [
-        { model: 'GPT-4', status: 'approved' as const },
-        { model: 'Claude', status: 'approved' as const },
-        { model: 'Gemini', status: 'approved' as const },
-        { model: 'Llama', status: 'approved' as const },
-        { model: 'Mistral', status: 'approved' as const }
-      ]
-    }
-  ];
-
-  // Combine user missions with mock missions - user missions first
-  const postedMissions = [
-    ...userMissions.map(mission => ({
+  // Posted missions come from the backend (MissionsContext).
+  const postedMissions = userMissions.map(mission => {
+    const status = mapMissionStatus(mission.status);
+    return {
       id: mission.id,
       title: mission.title,
       bounty: mission.bountyAmount,
-      status: 'Finding Agent' as const,
-      agent: null,
-      postedDate: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-      deadline: '7 days',
-      juryConsensus: [
-        { model: 'GPT-4', status: 'pending' as const },
-        { model: 'Claude', status: 'pending' as const },
-        { model: 'Gemini', status: 'pending' as const },
-        { model: 'Llama', status: 'pending' as const },
-        { model: 'Mistral', status: 'pending' as const }
-      ]
-    })),
-    ...mockPostedMissions
-  ];
+      status,
+      agent: null as string | null,
+      postedDate: mission.timestamp.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+      deadline: status === 'Completed' ? 'Completed' : '—',
+      juryConsensus: juryFromStatus(status),
+    };
+  });
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -220,7 +177,9 @@ export function Enterprise() {
               </div>
               <span className="text-sm font-medium text-gray-600">Total USDC Spent</span>
             </div>
-            <p className="text-3xl font-bold text-green-700">${analytics.totalSpent.toLocaleString()}</p>
+            <p className="text-3xl font-bold text-green-700">
+              {analytics ? `$${analytics.totalSpent.toLocaleString()}` : '—'}
+            </p>
           </div>
 
           {/* Active Missions */}
@@ -231,7 +190,7 @@ export function Enterprise() {
               </div>
               <span className="text-sm font-medium text-gray-600">Active Missions</span>
             </div>
-            <p className="text-3xl font-bold text-blue-700">{analytics.activeMissions}</p>
+            <p className="text-3xl font-bold text-blue-700">{analytics ? analytics.activeMissions : '—'}</p>
           </div>
 
           {/* Completed Missions */}
@@ -242,7 +201,7 @@ export function Enterprise() {
               </div>
               <span className="text-sm font-medium text-gray-600">Completed</span>
             </div>
-            <p className="text-3xl font-bold text-purple-700">{analytics.completedMissions}</p>
+            <p className="text-3xl font-bold text-purple-700">{analytics ? analytics.completedMissions : '—'}</p>
           </div>
 
           {/* Average Rating */}
@@ -254,7 +213,9 @@ export function Enterprise() {
               <span className="text-sm font-medium text-gray-600">Avg. Rating</span>
             </div>
             <div className="flex items-center gap-2">
-              <p className="text-3xl font-bold text-amber-700">{analytics.averageRating}</p>
+              <p className="text-3xl font-bold text-amber-700">
+                {analytics && analytics.averageRating > 0 ? analytics.averageRating.toFixed(1) : '—'}
+              </p>
               <Star className="h-6 w-6 fill-amber-500 text-amber-500" />
             </div>
           </div>
@@ -268,6 +229,12 @@ export function Enterprise() {
           Top Performing Agents
         </h3>
         <div className="rounded-xl border border-indigo-200/40 bg-white/80 backdrop-blur-md p-6 shadow-lg">
+          {agentsLoading && topAgents.length === 0 && (
+            <p className="text-sm text-gray-400 py-6 text-center">Loading agents…</p>
+          )}
+          {!agentsLoading && topAgents.length === 0 && (
+            <p className="text-sm text-gray-400 py-6 text-center">No agent performance data yet.</p>
+          )}
           <div className="space-y-4">
             {topAgents.map((agent, index) => (
               <div
@@ -301,7 +268,9 @@ export function Enterprise() {
                     <p className="text-xs text-gray-600">Rating</p>
                     <div className="flex items-center gap-1">
                       <Star className="h-4 w-4 fill-amber-500 text-amber-500" />
-                      <p className="text-lg font-bold text-amber-700">{agent.avgRating}</p>
+                      <p className="text-lg font-bold text-amber-700">
+                        {agent.avgRating > 0 ? agent.avgRating.toFixed(1) : '—'}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -318,6 +287,11 @@ export function Enterprise() {
           Your Posted Missions
         </h3>
         <div className="space-y-4">
+          {postedMissions.length === 0 && (
+            <div className="rounded-xl border border-indigo-200/40 bg-white/80 backdrop-blur-md p-8 shadow-lg text-center">
+              <p className="text-sm text-gray-400">No missions posted yet. Post your first mission to get started.</p>
+            </div>
+          )}
           {postedMissions.map((mission) => (
             <div
               key={mission.id}

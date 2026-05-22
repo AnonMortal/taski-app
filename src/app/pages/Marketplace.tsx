@@ -2,146 +2,46 @@ import { Search, DollarSign, Target, Bot, Star, Clock, Zap, CheckCircle, Message
 import { useState } from 'react';
 import { Link } from 'react-router';
 import { useMissions } from '../contexts/MissionsContext';
+import { useAgents } from '../contexts/AgentsContext';
 
 export function Marketplace() {
   const [activeTab, setActiveTab] = useState<'missions' | 'agents' | 'history'>('missions');
-  const { missions: userMissions } = useMissions();
+  const { missions: userMissions, loading: missionsLoading, error: missionsError } = useMissions();
+  const { agents: rawAgents, loading: agentsLoading, error: agentsError } = useAgents();
 
-  // Mock data for missions
-  const mockMissions = [
-    {
-      id: 1,
-      title: 'Build E-commerce Scraper',
-      bounty: 1200,
-      skills: ['Web Scraping', 'API Integration', 'Data Analysis'],
-      description: 'Need an automated scraper for top e-commerce platforms with JSON export',
-      postedBy: 'TechCorp Inc.',
-      deadline: '5 days'
-    },
-    {
-      id: 2,
-      title: 'Generate Marketing Copy',
-      bounty: 850,
-      skills: ['Writing', 'Translation', 'Research'],
-      description: 'Create compelling product descriptions for 50+ items in English and French',
-      postedBy: 'Individual',
-      deadline: '3 days'
-    },
-    {
-      id: 3,
-      title: 'Automated Testing Suite',
-      bounty: 2500,
-      skills: ['Testing & QA', 'Code Generation', 'API Integration'],
-      description: 'Build comprehensive test automation for React application with CI/CD integration',
-      postedBy: 'DevFlow Systems',
-      deadline: '7 days'
-    },
-    {
-      id: 4,
-      title: 'Audio Transcription Service',
-      bounty: 950,
-      skills: ['Audio Processing', 'Translation'],
-      description: 'Transcribe and translate 10 hours of podcast content from English to Spanish',
-      postedBy: 'Individual',
-      deadline: '4 days'
-    },
-    {
-      id: 5,
-      title: 'Data Analysis Dashboard',
-      bounty: 1800,
-      skills: ['Data Analysis', 'Code Generation'],
-      description: 'Create interactive analytics dashboard with real-time data visualization',
-      postedBy: 'Analytics Pro',
-      deadline: '6 days'
-    },
-    {
-      id: 6,
-      title: 'Image Processing Pipeline',
-      bounty: 1350,
-      skills: ['Image Processing', 'API Integration'],
-      description: 'Batch process 1000+ images with watermarking and optimization',
-      postedBy: 'Individual',
-      deadline: '5 days'
-    }
-  ];
-
-  // Combine user missions with mock missions
-  const allMissions = [
-    ...userMissions.map(mission => ({
+  // All missions come from the backend (MissionsContext). Open missions are
+  // shown first so the freshly posted ones surface at the top.
+  const allMissions = [...userMissions]
+    .sort((a, b) => {
+      if (a.status === b.status) return b.timestamp.getTime() - a.timestamp.getTime();
+      return a.status === 'open' ? -1 : 1;
+    })
+    .map(mission => ({
       id: mission.id,
       title: mission.title,
       bounty: mission.bountyAmount,
       skills: [mission.category],
       description: mission.description,
       postedBy: mission.posterType === 'enterprise' ? (mission.companyName || 'Enterprise') : 'Individual',
-      deadline: 'Just posted'
-    })),
-    ...mockMissions
-  ];
+      deadline:
+        mission.status === 'completed'
+          ? 'Completed'
+          : mission.status === 'in-progress'
+            ? 'In progress'
+            : 'Open',
+    }));
 
-  // Mock data for agents
-  const agents = [
-    {
-      id: 1,
-      name: 'CodeWizard AI',
-      reputation: 98,
-      specialty: 'Code Generation',
-      status: 'Active' as const,
-      completedMissions: 127,
-      successRate: 99,
-      staked: 8500
-    },
-    {
-      id: 2,
-      name: 'DataCruncher Pro',
-      reputation: 95,
-      specialty: 'Data Analysis',
-      status: 'Active' as const,
-      completedMissions: 94,
-      successRate: 97,
-      staked: 6200
-    },
-    {
-      id: 3,
-      name: 'ScraperBot 3000',
-      reputation: 92,
-      specialty: 'Web Scraping',
-      status: 'Busy' as const,
-      completedMissions: 156,
-      successRate: 96,
-      staked: 7800
-    },
-    {
-      id: 4,
-      name: 'WriteGenius',
-      reputation: 89,
-      specialty: 'Writing',
-      status: 'Active' as const,
-      completedMissions: 203,
-      successRate: 95,
-      staked: 5400
-    },
-    {
-      id: 5,
-      name: 'TestMaster AI',
-      reputation: 96,
-      specialty: 'Testing & QA',
-      status: 'Busy' as const,
-      completedMissions: 78,
-      successRate: 98,
-      staked: 9100
-    },
-    {
-      id: 6,
-      name: 'AudioScribe',
-      reputation: 91,
-      specialty: 'Audio Processing',
-      status: 'Active' as const,
-      completedMissions: 112,
-      successRate: 94,
-      staked: 4900
-    }
-  ];
+  // Agents come from the backend leaderboard (AgentsContext).
+  const agents = rawAgents.map(agent => ({
+    id: agent.id,
+    name: agent.name,
+    reputation: Math.round(agent.reputation),
+    specialty: agent.specialization,
+    status: 'Active' as const,
+    completedMissions: 0,
+    successRate: Math.round(agent.successRate),
+    staked: agent.currentStake,
+  }));
 
   // Mock data for completed missions with reviews
   const completedMissions = [
@@ -284,7 +184,15 @@ export function Marketplace() {
       </div>
 
       {/* Content Area */}
-      {activeTab === 'missions' && (
+      {activeTab === 'missions' && missionsLoading && allMissions.length === 0 && (
+        <p className="text-sm text-gray-400 py-12 text-center">Loading missions…</p>
+      )}
+      {activeTab === 'missions' && !missionsLoading && allMissions.length === 0 && (
+        <p className="text-sm text-gray-400 py-12 text-center">
+          {missionsError ? 'Unable to load missions right now.' : 'No missions available yet.'}
+        </p>
+      )}
+      {activeTab === 'missions' && allMissions.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
           {allMissions.map((mission) => (
             <div
@@ -359,7 +267,15 @@ export function Marketplace() {
         </div>
       )}
 
-      {activeTab === 'agents' && (
+      {activeTab === 'agents' && agentsLoading && agents.length === 0 && (
+        <p className="text-sm text-gray-400 py-12 text-center">Loading agents…</p>
+      )}
+      {activeTab === 'agents' && !agentsLoading && agents.length === 0 && (
+        <p className="text-sm text-gray-400 py-12 text-center">
+          {agentsError ? 'Unable to load agents right now.' : 'No agents registered yet.'}
+        </p>
+      )}
+      {activeTab === 'agents' && agents.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
           {agents.map((agent) => (
             <div

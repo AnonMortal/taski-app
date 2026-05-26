@@ -1,4 +1,4 @@
-import { Target, FileText, DollarSign, Shield, Upload, Lock, User, Building2, CheckCircle } from 'lucide-react';
+import { Target, FileText, DollarSign, Shield, Upload, Lock, User, Building2, CheckCircle, X } from 'lucide-react';
 import { useState } from 'react';
 import { motion } from 'motion/react';
 import { useMissions } from '../contexts/MissionsContext';
@@ -14,6 +14,28 @@ export function PostMission() {
   const [missionTitle, setMissionTitle] = useState('');
   const [missionDescription, setMissionDescription] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
+  const [contextFiles, setContextFiles] = useState<File[]>([]);
+  const [isDragging, setIsDragging] = useState(false);
+
+  const ACCEPTED_EXTENSIONS = ['.pdf', '.doc', '.docx', '.txt'];
+  const MAX_FILE_BYTES = 10 * 1024 * 1024;
+
+  const addFiles = (incoming: FileList | File[]) => {
+    const next: File[] = [];
+    for (const file of Array.from(incoming)) {
+      const ext = '.' + file.name.split('.').pop()?.toLowerCase();
+      if (!ACCEPTED_EXTENSIONS.includes(ext)) {
+        showError(`Unsupported file type: ${file.name}`);
+        continue;
+      }
+      if (file.size > MAX_FILE_BYTES) {
+        showError(`${file.name} exceeds 10 MB limit`);
+        continue;
+      }
+      next.push(file);
+    }
+    if (next.length > 0) setContextFiles(prev => [...prev, ...next]);
+  };
 
   const { addMission } = useMissions();
   const navigate = useNavigate();
@@ -54,7 +76,7 @@ export function PostMission() {
         bountyAmount,
         posterType,
         companyName: posterType === 'enterprise' ? companyName : undefined,
-      });
+      }, contextFiles);
     } catch {
       /* toast already shown by the context */
     }
@@ -196,10 +218,35 @@ export function PostMission() {
 
               {/* Context File Upload */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="context-files-input" className="block text-sm font-medium text-gray-700 mb-2">
                   Context Files (Optional)
                 </label>
-                <div className="border-2 border-dashed border-indigo-200 rounded-xl bg-indigo-50/30 p-6 text-center hover:border-indigo-400 transition-all cursor-pointer">
+                <label
+                  htmlFor="context-files-input"
+                  onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+                  onDragLeave={() => setIsDragging(false)}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    setIsDragging(false);
+                    if (e.dataTransfer.files?.length) addFiles(e.dataTransfer.files);
+                  }}
+                  className={`block border-2 border-dashed rounded-xl p-6 text-center transition-all cursor-pointer ${
+                    isDragging
+                      ? 'border-indigo-500 bg-indigo-50/70'
+                      : 'border-indigo-200 bg-indigo-50/30 hover:border-indigo-400'
+                  }`}
+                >
+                  <input
+                    id="context-files-input"
+                    type="file"
+                    multiple
+                    accept=".pdf,.doc,.docx,.txt"
+                    className="sr-only"
+                    onChange={(e) => {
+                      if (e.target.files?.length) addFiles(e.target.files);
+                      e.target.value = '';
+                    }}
+                  />
                   <Upload className="h-8 w-8 text-indigo-400 mx-auto mb-2" />
                   <p className="text-sm text-gray-600 mb-1">
                     <span className="text-indigo-600 font-semibold">Click to upload</span> or drag and drop
@@ -207,7 +254,33 @@ export function PostMission() {
                   <p className="text-xs text-gray-500">
                     PDF, DOC, TXT up to 10MB
                   </p>
-                </div>
+                </label>
+
+                {contextFiles.length > 0 && (
+                  <ul className="mt-3 space-y-2">
+                    {contextFiles.map((file, idx) => (
+                      <li
+                        key={`${file.name}-${idx}`}
+                        className="flex items-center justify-between gap-3 rounded-lg border border-indigo-200/60 bg-white/80 px-3 py-2 text-sm"
+                      >
+                        <span className="truncate text-gray-700">
+                          {file.name}
+                          <span className="ml-2 text-xs text-gray-400">
+                            {(file.size / 1024).toFixed(1)} KB
+                          </span>
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setContextFiles(prev => prev.filter((_, i) => i !== idx))}
+                          className="text-gray-400 hover:text-red-500 transition-colors"
+                          aria-label={`Remove ${file.name}`}
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
             </div>
           </div>

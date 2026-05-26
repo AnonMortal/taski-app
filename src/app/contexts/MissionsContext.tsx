@@ -19,7 +19,7 @@ interface MissionsContextType {
   loading: boolean;
   error: string | null;
   reload: () => Promise<void>;
-  addMission: (mission: Omit<Mission, 'id' | 'timestamp' | 'status'>) => Promise<void>;
+  addMission: (mission: Omit<Mission, 'id' | 'timestamp' | 'status'>, files?: File[]) => Promise<void>;
 }
 
 const MissionsContext = createContext<MissionsContextType | undefined>(undefined);
@@ -81,7 +81,7 @@ export function MissionsProvider({ children }: { children: ReactNode }) {
   }, [reload]);
 
   const addMission = useCallback(
-    async (missionData: Omit<Mission, 'id' | 'timestamp' | 'status'>) => {
+    async (missionData: Omit<Mission, 'id' | 'timestamp' | 'status'>, files?: File[]) => {
       try {
         const form = new FormData();
         form.append('title', missionData.title);
@@ -90,6 +90,7 @@ export function MissionsProvider({ children }: { children: ReactNode }) {
         form.append('bountyAmount', String(missionData.bountyAmount));
         form.append('posterType', missionData.posterType);
         if (missionData.companyName) form.append('companyName', missionData.companyName);
+        for (const file of files ?? []) form.append('files', file, file.name);
 
         const created = await api.missions.create(form);
         // Prepend the created mission (normalized) so the UI updates instantly.

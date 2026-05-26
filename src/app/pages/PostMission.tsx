@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { motion } from 'motion/react';
 import { useMissions } from '../contexts/MissionsContext';
 import { useNavigate } from 'react-router';
+import { showError } from '../../lib/toast';
 
 export function PostMission() {
   const [bountyAmount, setBountyAmount] = useState(1000);
@@ -37,6 +38,10 @@ export function PostMission() {
   const juryShare = bountyAmount * 0.1;
 
   const handleSubmit = async () => {
+    if (bountyAmount < 1) {
+      showError('Minimum bounty is 1 USDC');
+      return;
+    }
     setIsSubmitting(true);
 
     // Create the mission on the backend via the missions context.
@@ -253,14 +258,14 @@ export function PostMission() {
                   <input
                     id="bounty-amount"
                     type="number"
-                    min="0"
-                    step="50"
+                    min="1"
+                    step="1"
                     value={bountyAmount}
                     onChange={(e) => setBountyAmount(Number(e.target.value))}
                     className="w-full pl-8 pr-4 py-3 rounded-xl border border-indigo-200 bg-white/60 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
                   />
                 </div>
-                <p className="text-xs text-gray-500 mt-2">Minimum bounty: $50 USDC</p>
+                <p className="text-xs text-gray-500 mt-2">Minimum bounty: 1 USDC</p>
               </div>
 
               {/* Bounty Split Visualization */}
@@ -337,8 +342,8 @@ export function PostMission() {
                 : 'bg-gradient-to-r from-[#4B3EEF] to-[#3D32D9] hover:shadow-xl hover:scale-[1.02]'
             } text-white transition-all duration-300`}
             onClick={handleSubmit}
-            disabled={isSubmitting}
-            whileTap={!isSubmitting ? { scale: 0.98 } : {}}
+            disabled={isSubmitting || bountyAmount < 1}
+            whileTap={!isSubmitting && bountyAmount >= 1 ? { scale: 0.98 } : {}}
           >
             {/* Animated background shine */}
             {isSubmitting && (

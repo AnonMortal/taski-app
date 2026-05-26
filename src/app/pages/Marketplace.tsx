@@ -1,4 +1,4 @@
-import { Search, DollarSign, Target, Bot, Star, Clock, Zap, CheckCircle, MessageSquare, User, Building2 } from 'lucide-react';
+import { Search, DollarSign, Target, Bot, Clock, Zap, CheckCircle, User, Building2 } from 'lucide-react';
 import { useState } from 'react';
 import { Link } from 'react-router';
 import { useMissions } from '../contexts/MissionsContext';
@@ -43,81 +43,25 @@ export function Marketplace() {
     staked: agent.currentStake,
   }));
 
-  // Mock data for completed missions with reviews
-  const completedMissions = [
-    {
-      id: 1,
-      title: 'E-commerce Data Migration',
-      bounty: 1500,
-      completedBy: 'DataCruncher Pro',
-      completedDate: 'Mar 10, 2026',
-      rating: 5,
-      review: 'Exceptional work! Delivered ahead of schedule with perfect data integrity. Highly recommend.',
-      client: 'ShopifyPro',
+  // Completed missions = those returned by the backend with status=completed.
+  // The rating/review/winning agent are not exposed on the public listing
+  // endpoint, so we only surface the fields available there.
+  const completedMissions = userMissions
+    .filter((m) => m.status === 'completed')
+    .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
+    .map((m) => ({
+      id: m.id,
+      title: m.title,
+      bounty: m.bountyAmount,
+      completedDate: m.timestamp.toLocaleDateString(undefined, {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+      }),
+      client: m.posterType === 'enterprise' ? m.companyName || 'Enterprise' : 'Individual',
       juryVerdict: 'Approved' as const,
-      skills: ['Data Analysis', 'API Integration']
-    },
-    {
-      id: 2,
-      title: 'Content Generation for Blog',
-      bounty: 750,
-      completedBy: 'WriteGenius',
-      completedDate: 'Mar 9, 2026',
-      rating: 4,
-      review: 'Great quality content, minor revisions needed but overall very satisfied with the results.',
-      client: 'ContentHub',
-      juryVerdict: 'Approved' as const,
-      skills: ['Writing', 'Research']
-    },
-    {
-      id: 3,
-      title: 'API Integration & Testing',
-      bounty: 2200,
-      completedBy: 'CodeWizard AI',
-      completedDate: 'Mar 8, 2026',
-      rating: 5,
-      review: 'Flawless execution. The agent understood complex requirements and delivered production-ready code.',
-      client: 'TechFlow Inc.',
-      juryVerdict: 'Approved' as const,
-      skills: ['Code Generation', 'Testing & QA', 'API Integration']
-    },
-    {
-      id: 4,
-      title: 'Web Scraper Development',
-      bounty: 1100,
-      completedBy: 'ScraperBot 3000',
-      completedDate: 'Mar 7, 2026',
-      rating: 5,
-      review: 'Perfect scraping solution with excellent error handling. Works like a charm!',
-      client: 'DataMine Co.',
-      juryVerdict: 'Approved' as const,
-      skills: ['Web Scraping', 'Data Analysis']
-    },
-    {
-      id: 5,
-      title: 'Podcast Transcription',
-      bounty: 680,
-      completedBy: 'AudioScribe',
-      completedDate: 'Mar 6, 2026',
-      rating: 4,
-      review: 'Good accuracy on transcription. Some minor formatting issues but overall solid work.',
-      client: 'PodStream Media',
-      juryVerdict: 'Approved' as const,
-      skills: ['Audio Processing', 'Translation']
-    },
-    {
-      id: 6,
-      title: 'Image Batch Processing',
-      bounty: 920,
-      completedBy: 'PixelPerfect AI',
-      completedDate: 'Mar 5, 2026',
-      rating: 5,
-      review: 'Outstanding quality! Processed 2000+ images with perfect consistency. Will hire again.',
-      client: 'PhotoStack',
-      juryVerdict: 'Approved' as const,
-      skills: ['Image Processing']
-    }
-  ];
+      skills: [m.category],
+    }));
 
   return (
     <main className="flex-1 overflow-y-auto p-4 md:p-8">
@@ -360,95 +304,70 @@ export function Marketplace() {
       )}
 
       {activeTab === 'history' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
-          {completedMissions.map((mission) => (
-            <div
-              key={mission.id}
-              className="rounded-xl border border-indigo-200/40 bg-white/80 backdrop-blur-md p-6 shadow-lg hover:shadow-xl transition-all hover:scale-[1.02]"
-            >
-              {/* Status Badge */}
-              <div className="mb-4 flex items-center justify-between">
-                <span className="px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700 flex items-center gap-1">
-                  <CheckCircle className="h-3.5 w-3.5" />
-                  Completed
-                </span>
-                <span className="text-xs text-gray-500">{mission.completedDate}</span>
-              </div>
-
-              {/* Mission Title */}
-              <div className="mb-4">
-                <h3 className="text-lg font-bold text-[#1A1B25] mb-2">{mission.title}</h3>
-                <div className="flex items-center gap-2 text-sm">
-                  <Bot className="h-4 w-4 text-indigo-600" />
-                  <span className="text-gray-600">by</span>
-                  <span className="font-semibold text-indigo-700">{mission.completedBy}</span>
+        completedMissions.length === 0 ? (
+          <div className="rounded-xl border border-indigo-200/40 bg-white/80 backdrop-blur-md p-8 text-center">
+            <CheckCircle className="h-10 w-10 text-indigo-300 mx-auto mb-3" />
+            <p className="text-sm font-semibold text-[#1A1B25] mb-1">No completed missions yet</p>
+            <p className="text-xs text-gray-500">Settled missions will appear here once the jury validates them.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
+            {completedMissions.map((mission) => (
+              <div
+                key={mission.id}
+                className="rounded-xl border border-indigo-200/40 bg-white/80 backdrop-blur-md p-6 shadow-lg hover:shadow-xl transition-all hover:scale-[1.02]"
+              >
+                <div className="mb-4 flex items-center justify-between">
+                  <span className="px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700 flex items-center gap-1">
+                    <CheckCircle className="h-3.5 w-3.5" />
+                    Completed
+                  </span>
+                  <span className="text-xs text-gray-500">{mission.completedDate}</span>
                 </div>
-              </div>
 
-              {/* Bounty & Jury Verdict */}
-              <div className="mb-4 grid grid-cols-2 gap-2">
-                <div className="rounded-lg bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 p-2">
-                  <p className="text-xs text-gray-600">Bounty</p>
-                  <p className="text-base font-bold text-green-700">${mission.bounty}</p>
-                </div>
-                <div className="rounded-lg bg-gradient-to-r from-purple-50 to-violet-50 border border-purple-200 p-2">
-                  <p className="text-xs text-gray-600">Jury</p>
-                  <p className="text-base font-bold text-purple-700">{mission.juryVerdict}</p>
-                </div>
-              </div>
-
-              {/* Rating */}
-              <div className="mb-4 rounded-lg bg-amber-50/50 border border-amber-200 p-3">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-semibold text-gray-600">Client Rating</span>
-                  <div className="flex items-center gap-1">
-                    {[...Array(5)].map((_, i) => (
-                      <Star
-                        key={i}
-                        className={`h-4 w-4 ${
-                          i < mission.rating
-                            ? 'fill-amber-500 text-amber-500'
-                            : 'fill-gray-200 text-gray-200'
-                        }`}
-                      />
-                    ))}
-                    <span className="ml-1 text-sm font-bold text-amber-600">{mission.rating}/5</span>
+                <div className="mb-4">
+                  <h3 className="text-lg font-bold text-[#1A1B25] mb-2">{mission.title}</h3>
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <Bot className="h-4 w-4 text-indigo-600" />
+                    Posted by <span className="font-semibold text-indigo-700">{mission.client}</span>
                   </div>
                 </div>
-              </div>
 
-              {/* Review */}
-              <div className="mb-4 rounded-lg bg-blue-50/50 border border-blue-200 p-3">
-                <div className="flex items-center gap-2 mb-2">
-                  <MessageSquare className="h-4 w-4 text-blue-600" />
-                  <span className="text-xs font-semibold text-gray-700">Client Review</span>
+                <div className="mb-4 grid grid-cols-2 gap-2">
+                  <div className="rounded-lg bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 p-2">
+                    <p className="text-xs text-gray-600">Bounty</p>
+                    <p className="text-base font-bold text-green-700">${mission.bounty.toLocaleString()}</p>
+                  </div>
+                  <div className="rounded-lg bg-gradient-to-r from-purple-50 to-violet-50 border border-purple-200 p-2">
+                    <p className="text-xs text-gray-600">Jury</p>
+                    <p className="text-base font-bold text-purple-700">{mission.juryVerdict}</p>
+                  </div>
                 </div>
-                <p className="text-sm text-gray-600 italic line-clamp-3">"{mission.review}"</p>
-                <p className="text-xs text-gray-500 mt-2">— {mission.client}</p>
-              </div>
 
-              {/* Skills Used */}
-              <div className="mb-4">
-                <p className="text-xs font-semibold text-gray-500 mb-2">Skills Used</p>
-                <div className="flex flex-wrap gap-1.5">
-                  {mission.skills.map((skill) => (
-                    <span
-                      key={skill}
-                      className="px-2.5 py-1 rounded-md bg-indigo-100 text-indigo-700 text-xs font-medium"
-                    >
-                      {skill}
-                    </span>
-                  ))}
+                <div className="mb-4">
+                  <p className="text-xs font-semibold text-gray-500 mb-2">Category</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {mission.skills.map((skill) => (
+                      <span
+                        key={skill}
+                        className="px-2.5 py-1 rounded-md bg-indigo-100 text-indigo-700 text-xs font-medium"
+                      >
+                        {skill}
+                      </span>
+                    ))}
+                  </div>
                 </div>
-              </div>
 
-              {/* View Details Button */}
-              <button className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold py-2.5 px-4 rounded-lg shadow-md hover:shadow-lg hover:scale-[1.02] transition-all duration-300">
-                View Full Details
-              </button>
-            </div>
-          ))}
-        </div>
+                <Link
+                  to={`/apply-mission/${mission.id}`}
+                  className="block text-center w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold py-2.5 px-4 rounded-lg shadow-md hover:shadow-lg hover:scale-[1.02] transition-all duration-300"
+                >
+                  View Full Details
+                </Link>
+              </div>
+            ))}
+          </div>
+        )
       )}
     </main>
   );

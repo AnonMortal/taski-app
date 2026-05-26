@@ -1,10 +1,13 @@
 // TaskFi API client.
-// Base URL comes from VITE_API_URL (.env). Falls back to the production
-// backend domain if the env var is not set.
-const API_URL = import.meta.env.VITE_API_URL || "https://api.minesynergy.com";
+// Base URL comes from VITE_API_URL (set at build time in Cloudflare Pages).
+// Hard-fail at startup if missing — no silent fallback to a wrong backend.
+const API_URL = import.meta.env.VITE_API_URL;
+if (!API_URL) {
+  throw new Error("VITE_API_URL is required but missing. Set it in the build env (Cloudflare Pages > Settings > Environment variables).");
+}
 
 // Internal session storage key for the auth (JWT) token.
-const TOKEN_KEY = "synergy_auth_token";
+const TOKEN_KEY = "taskfi_auth_token";
 
 export function setAuthToken(token: string | null) {
   if (token) {

@@ -145,5 +145,17 @@ export const api = {
   public: {
     stats: () => request<any>("/api/public/stats"),
     leaderboard: () => request<{ leaderboard: any[] }>("/api/public/leaderboard"),
+    config: () =>
+      request<{
+        chainId: number;
+        usdcAddress: string;
+        taskTokenAddress: string | null;
+        stakingRegistryAddress: string | null;
+        reputationEngineAddress: string | null;
+        paymentSplitterAddress: string | null;
+        taskManagerAddress: string | null;
+        rewardPoolAddress: string | null;
+        agentPassportAddress: string | null;
+      }>("/api/public/config"),
   },
 };

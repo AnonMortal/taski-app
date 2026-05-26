@@ -1,8 +1,12 @@
 import { User, Wallet, Shield, Bell, Globe, Save, Check, LogOut } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import type { Address } from 'viem';
 import { useWallet } from '../../lib/wallet-context';
 import { api } from '../../lib/api';
 import { showSuccess } from '../../lib/toast';
+import { getTokenBalances, formatUsdc as formatUsdcBalance, formatTask } from '../../lib/balances';
+import { getPublicClient } from '../../lib/chain';
+import { useRuntimeConfig } from '../contexts/ConfigContext';
 
 interface LocalProfile {
   displayName: string;
@@ -21,13 +25,10 @@ const DEFAULT_NOTIFS = {
   weeklyDigest: false,
 };
 
-function formatUsdc(raw: string | null): string {
+function formatPendingUsdc(raw: string | null): string {
   if (!raw) return '—';
   try {
-    const big = BigInt(raw);
-    const whole = big / 1_000_000n;
-    const frac = (big % 1_000_000n) / 10_000n;
-    return `$${whole.toLocaleString()}.${frac.toString().padStart(2, '0')}`;
+    return formatUsdcBalance(BigInt(raw));
   } catch {
     return '—';
   }
@@ -35,6 +36,7 @@ function formatUsdc(raw: string | null): string {
 
 export function Account() {
   const { address, lock } = useWallet();
+  const { config } = useRuntimeConfig();
   const shortAddress = address
     ? `${address.slice(0, 6)}...${address.slice(-4)}`
     : 'Not connected';
@@ -45,6 +47,11 @@ export function Account() {
   const [profile, setProfile] = useState<LocalProfile>({ displayName: '', email: '', bio: '' });
   const [notifications, setNotifications] = useState(DEFAULT_NOTIFS);
   const [pendingEarnings, setPendingEarnings] = useState<string | null>(null);
+  const [onChainBalances, setOnChainBalances] = useState<{ usdc: bigint | null; task: bigint | null }>({
+    usdc: null,
+    task: null,
+  });
+  const chainReadsEnabled = getPublicClient() !== null;
   const [saved, setSaved] = useState(false);
 
   // Load locally-stored profile + notifications per wallet
@@ -91,6 +98,27 @@ export function Account() {
       cancelled = true;
     };
   }, [address]);
+
+  // Load on-chain $TASK + USDC balances. The token addresses come from the
+  // backend (/api/public/config), so contract redeploys don't require a
+  // front rebuild.
+  useEffect(() => {
+    if (!address || !chainReadsEnabled || !config) {
+      setOnChainBalances({ usdc: null, task: null });
+      return;
+    }
+    let cancelled = false;
+    getTokenBalances(address as Address, config.taskTokenAddress, config.usdcAddress)
+      .then((b) => {
+        if (!cancelled) setOnChainBalances(b);
+      })
+      .catch(() => {
+        if (!cancelled) setOnChainBalances({ usdc: null, task: null });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [address, chainReadsEnabled, config]);
 
   function saveProfile() {
     if (!profileKey) return;
@@ -204,15 +232,29 @@ export function Account() {
             </div>
           </div>
 
-          {/* Pending earnings (live from backend) */}
+          {/* Balances + pending earnings */}
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-3">Pending Earnings</label>
-            <div className="p-4 rounded-lg bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200">
-              <p className="text-xs text-gray-600 mb-1">USDC held in escrow for completed missions</p>
-              <p className="text-2xl font-bold text-green-700">{formatUsdc(pendingEarnings)}</p>
-              <p className="text-xs text-gray-500 mt-1">
-                Claim via Staking &amp; Rewards once a mission settles.
-              </p>
+            <label className="block text-sm font-semibold text-gray-700 mb-3">Token Balances</label>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div className="p-4 rounded-lg bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200">
+                <p className="text-xs text-gray-600 mb-1">USDC</p>
+                <p className="text-2xl font-bold text-green-700">{formatUsdcBalance(onChainBalances.usdc)}</p>
+                <p className="text-xs text-gray-500 mt-1">
+                  {chainReadsEnabled ? 'On-chain balance' : 'RPC not configured'}
+                </p>
+              </div>
+              <div className="p-4 rounded-lg bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200">
+                <p className="text-xs text-gray-600 mb-1">$TASK</p>
+                <p className="text-2xl font-bold text-indigo-700">{formatTask(onChainBalances.task)}</p>
+                <p className="text-xs text-gray-500 mt-1">
+                  {chainReadsEnabled ? 'On-chain balance' : 'RPC not configured'}
+                </p>
+              </div>
+              <div className="p-4 rounded-lg bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200">
+                <p className="text-xs text-gray-600 mb-1">Pending USDC</p>
+                <p className="text-2xl font-bold text-amber-700">{formatPendingUsdc(pendingEarnings)}</p>
+                <p className="text-xs text-gray-500 mt-1">In escrow, claim from Staking &amp; Rewards.</p>
+              </div>
             </div>
           </div>
         </div>

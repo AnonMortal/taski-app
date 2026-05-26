@@ -2,6 +2,7 @@ import { Search, Wallet, Bot } from 'lucide-react';
 import { useWallet } from '../../../lib/wallet-context';
 import { useAgents } from '../../contexts/AgentsContext';
 import { isMainnet } from '../../../lib/chain';
+import taskfiLogo from '@/imports/logo_taskfi.png';
 
 export function TopHeader() {
   const { address, lock } = useWallet();
@@ -15,6 +16,11 @@ export function TopHeader() {
   return (
     <header className="border-b border-indigo-200/30 bg-white/40 backdrop-blur-xl">
       <div className="flex h-16 md:h-20 items-center justify-between px-4 md:px-8 gap-4">
+        <img
+          src={taskfiLogo}
+          alt="TaskFi"
+          className="ml-1 h-8 w-8 rounded-lg object-contain shadow-md shadow-[#4B3EEF]/20 shrink-0"
+        />
         {/* Search Bar */}
         <div className="flex-1 max-w-xl">
           <div className="relative">

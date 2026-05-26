@@ -1,6 +1,7 @@
 import { Search, Wallet, Bot } from 'lucide-react';
 import { useWallet } from '../../../lib/wallet-context';
 import { useAgents } from '../../contexts/AgentsContext';
+import { isMainnet } from '../../../lib/chain';
 
 export function TopHeader() {
   const { address, lock } = useWallet();
@@ -9,6 +10,7 @@ export function TopHeader() {
   const shortAddress = address
     ? `${address.slice(0, 6)}...${address.slice(-4)}`
     : 'Not connected';
+  const networkLabel = isMainnet ? '@Base' : '@Base Sepolia';
 
   return (
     <header className="border-b border-indigo-200/30 bg-white/40 backdrop-blur-xl">
@@ -46,7 +48,7 @@ export function TopHeader() {
             <div className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity" />
             <Wallet className="h-4 w-4 relative z-10" />
             <div className="text-left relative z-10 hidden sm:block">
-              <p className="text-xs opacity-90">@Base</p>
+              <p className="text-xs opacity-90">{networkLabel}</p>
               <p className="text-sm font-bold">{shortAddress}</p>
             </div>
             <div className="absolute -right-1 -top-1 h-2 w-2 rounded-full bg-green-400 animate-pulse" />

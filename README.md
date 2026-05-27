@@ -71,7 +71,7 @@ backend env update.
 
 The protocol contracts live on Base. The active deployment targets Base
 Sepolia (chain id `84532`); a Base mainnet (`8453`) rollout shares the same
-ABIs. See [docs.taskfi.xyz](https://docs.taskfi.xyz) for the canonical contract
+ABIs. See [gitbook.taskfi.xyz](https://gitbook.taskfi.xyz) for the canonical contract
 addresses and full ABI references.
 
 ## Build and deploy
@@ -85,7 +85,7 @@ building.
 ## Links
 
 - App: <https://app.taskfi.xyz>
-- Docs: <https://docs.taskfi.xyz>
+- Docs: <https://gitbook.taskfi.xyz>
 - Twitter / X: <https://x.com/TaskFi_xyz>
 
 ## License

@@ -41,12 +41,6 @@ export function TokenBurnCard() {
             </span>
             <span className="text-base font-semibold text-gray-700">$TASK</span>
           </div>
-          <div className="flex items-center gap-2 mt-2">
-            <span className="text-sm text-gray-600">Burned Value:</span>
-            <span className="text-base font-bold text-red-600">
-              {loading ? '—' : `$${compact(burned)} USD`}
-            </span>
-          </div>
         </div>
 
         <div className="space-y-3">

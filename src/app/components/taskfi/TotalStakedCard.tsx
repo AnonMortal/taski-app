@@ -38,12 +38,6 @@ export function TotalStakedCard() {
           </span>
           <span className="text-base font-semibold text-gray-600">$TASK</span>
         </div>
-        <div className="flex items-center gap-2 mt-2">
-          <span className="text-sm text-gray-600">Value:</span>
-          <span className="text-base font-bold text-green-600">
-            {loading ? '—' : `$${compact(staked)} USD`}
-          </span>
-        </div>
       </div>
 
       <div className="space-y-2">

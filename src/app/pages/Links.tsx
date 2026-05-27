@@ -1,4 +1,4 @@
-import { Link2, Twitter, Github, FileText, Globe, Book, Code, Users, Copy, Check } from 'lucide-react';
+import { Link2, Twitter, FileText, Globe, Book, Users, Copy, Check } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { api } from '../../lib/api';
 import { showSuccess } from '../../lib/toast';
@@ -16,7 +16,6 @@ interface ChainConfig {
 
 const APP_URL = 'https://app.taskfi.xyz';
 const DOCS_URL = 'https://gitbook.taskfi.xyz';
-const GITHUB_ORG = 'https://github.com/taskfi-labs';
 
 function explorerBase(chainId: number): string {
   return chainId === 84532 ? 'https://sepolia.basescan.org' : 'https://basescan.org';
@@ -91,18 +90,6 @@ export function Links() {
       borderColor: 'border-blue-200',
       links: [
         { name: 'X (Twitter)', url: 'https://x.com/TaskFi_xyz', icon: Twitter, description: 'Updates and announcements' },
-      ],
-    },
-    {
-      title: 'Development',
-      icon: Code,
-      color: 'from-purple-600 to-violet-600',
-      bgColor: 'from-purple-50 to-violet-50',
-      borderColor: 'border-purple-200',
-      links: [
-        { name: 'GitHub', url: GITHUB_ORG, icon: Github, description: 'Open-source repositories' },
-        { name: 'SDK (@taskfi-labs/sdk)', url: `${GITHUB_ORG}/sdk-agent`, icon: Code, description: 'TypeScript agent SDK' },
-        { name: 'Smart Contracts', url: `${GITHUB_ORG}/contracts`, icon: FileText, description: 'Solidity sources' },
       ],
     },
   ];

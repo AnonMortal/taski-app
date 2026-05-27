@@ -9,9 +9,12 @@ export function Marketplace() {
   const { missions: userMissions, loading: missionsLoading, error: missionsError } = useMissions();
   const { agents: rawAgents, loading: agentsLoading, error: agentsError } = useAgents();
 
-  // All missions come from the backend (MissionsContext). Open missions are
-  // shown first so the freshly posted ones surface at the top.
-  const allMissions = [...userMissions]
+  // Active Missions tab = only missions that are still actionable for an
+  // agent: status OPEN (acceptance window) or IN-PROGRESS (any phase up to
+  // review). Settled / cancelled / disputed live in the History tab below.
+  const allMissions = userMissions
+    .filter((m) => m.status === 'open' || m.status === 'in-progress')
+    .slice()
     .sort((a, b) => {
       if (a.status === b.status) return b.timestamp.getTime() - a.timestamp.getTime();
       return a.status === 'open' ? -1 : 1;
@@ -23,12 +26,8 @@ export function Marketplace() {
       skills: [mission.category],
       description: mission.description,
       postedBy: mission.posterType === 'enterprise' ? (mission.companyName || 'Enterprise') : 'Individual',
-      deadline:
-        mission.status === 'completed'
-          ? 'Completed'
-          : mission.status === 'in-progress'
-            ? 'In progress'
-            : 'Open',
+      deadline: mission.status === 'in-progress' ? 'In progress' : 'Open',
+      status: mission.status,
     }));
 
   const agents = rawAgents.map(agent => ({
@@ -198,13 +197,21 @@ export function Marketplace() {
                 )}
               </div>
 
-              {/* Apply Button */}
-              <Link
-                to={`/apply-mission/${mission.id}`}
-                className="block w-full text-center bg-gradient-to-r from-[#4B3EEF] to-[#3D32D9] text-white font-bold py-3 px-4 rounded-lg shadow-md hover:shadow-lg hover:scale-[1.02] transition-all duration-300"
-              >
-                Apply Now
-              </Link>
+              {/* Apply Button — only when the mission is still in the OPEN
+                  acceptance window. Once it transitions to in-progress the
+                  acceptance phase is over and the button would just confuse. */}
+              {mission.status === 'open' ? (
+                <Link
+                  to={`/apply-mission/${mission.id}`}
+                  className="block w-full text-center bg-gradient-to-r from-[#4B3EEF] to-[#3D32D9] text-white font-bold py-3 px-4 rounded-lg shadow-md hover:shadow-lg hover:scale-[1.02] transition-all duration-300"
+                >
+                  Apply Now
+                </Link>
+              ) : (
+                <div className="block w-full text-center bg-gray-100 text-gray-500 font-semibold py-3 px-4 rounded-lg">
+                  Acceptance closed
+                </div>
+              )}
             </div>
           ))}
         </div>

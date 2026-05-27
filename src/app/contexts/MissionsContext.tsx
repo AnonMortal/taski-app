@@ -86,9 +86,9 @@ export function MissionsProvider({ children }: { children: ReactNode }) {
         const form = new FormData();
         form.append('title', missionData.title);
         form.append('description', missionData.description);
-        form.append('category', missionData.category);
-        form.append('bountyAmount', String(missionData.bountyAmount));
-        form.append('posterType', missionData.posterType);
+        form.append('category', missionData.category.toUpperCase().replace(/[\s&]+/g, '_'));
+        form.append('reward', String(missionData.bountyAmount));
+        form.append('posterType', missionData.posterType.toUpperCase());
         if (missionData.companyName) form.append('companyName', missionData.companyName);
         for (const file of files ?? []) form.append('files', file, file.name);
 

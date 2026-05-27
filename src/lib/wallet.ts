@@ -35,15 +35,15 @@ function bytesToHex(bytes: Uint8Array): Hex {
 // --- Web Crypto API (PBKDF2 + AES-GCM) ---
 
 /**
- * crypto.subtle n'existe que dans un "secure context" (HTTPS, ou
- * localhost / 127.0.0.1). Servi en HTTP simple sur une IP reseau, il vaut
- * undefined : on renvoie ici une erreur lisible plutot qu'un cryptique
+ * crypto.subtle only exists in a "secure context" (HTTPS, or
+ * localhost / 127.0.0.1). When served over plain HTTP on a network IP it is
+ * undefined: throw a readable error rather than a cryptic
  * "Cannot read properties of undefined".
  */
 function getSubtle(): SubtleCrypto {
   if (typeof crypto === 'undefined' || !crypto.subtle) {
     throw new Error(
-      "Le chiffrement du wallet n'est pas disponible : ouvre l'app en HTTPS ou via http://localhost (un contexte securise est requis pour la Web Crypto API).",
+      'Wallet encryption is unavailable: open the app over HTTPS or http://localhost (a secure context is required for the Web Crypto API).',
     );
   }
   return crypto.subtle;

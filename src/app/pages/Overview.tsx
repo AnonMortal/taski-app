@@ -1,35 +1,35 @@
 /**
  * OVERVIEW PAGE (Dashboard)
  * Route: /
- * 
- * Dashboard principal de l'application TaskFi.
- * Affiche les métriques clés et l'état actuel de l'utilisateur dans l'économie agentique.
- * 
+ *
+ * TaskFi dashboard home page.
+ * Displays key metrics and the user's current state in the agent economy.
+ *
  * Sections:
  * 1. Page Header
- *    - Titre "Overview"
- *    - Message de bienvenue
- * 
+ *    - Title "Overview"
+ *    - Welcome message
+ *
  * 2. Active Missions Table (Full width)
- *    - Tableau des missions actives de l'utilisateur
- *    - Visualisation du Consensus Jury (5 jurors avec votes ✓/✗)
+ *    - User's active missions
+ *    - Consensus Jury visualization (5 jurors with ✓/✗ votes)
  *    - Status, progress, actions
- * 
- * 3. Metrics Cards (Grid 3 colonnes)
+ *
+ * 3. Metrics Cards (3-column grid)
  *    - Total Earnings (USDC earned)
  *    - Total Staked ($TASK staked across agents)
  *    - Token Burn (Protocol deflationary mechanism)
- * 
+ *
  * Layout:
  * - Responsive: mobile (1 col) → desktop (3 cols)
  * - Padding: p-4 (mobile) → p-8 (desktop)
- * - Overflow: scroll vertical si contenu dépasse viewport
- * 
- * Components utilisés:
- * - MissionsTable: Tableau avec consensus visualization
- * - EarningsCard: Carte USDC earnings
- * - TotalStakedCard: Carte $TASK staking
- * - TokenBurnCard: Carte burn metrics
+ * - Overflow: scroll vertical when content exceeds viewport
+ *
+ * Components:
+ * - MissionsTable: Table with consensus visualization
+ * - EarningsCard: USDC earnings card
+ * - TotalStakedCard: $TASK staking card
+ * - TokenBurnCard: Burn metrics card
  */
 
 import { EarningsCard } from '../components/taskfi/EarningsCard';

@@ -1,21 +1,21 @@
 /**
  * ROOT LAYOUT COMPONENT
  *
- * Layout principal qui encapsule toutes les pages de l'application.
- * Définit la structure globale avec Header + Sidebar + Content area.
+ * Top-level layout that wraps every page in the app.
+ * Defines the global structure: Header + Sidebar + Content area.
  *
  * Wallet gate:
- * - Pas de wallet (ou setup en cours) -> <WalletSetup />
- * - Wallet verrouillé          -> <UnlockScreen />
- * - Wallet déverrouillé        -> SIWE sign-in puis l'app
+ * - No wallet (or setup in progress) -> <WalletSetup />
+ * - Wallet locked                    -> <UnlockScreen />
+ * - Wallet unlocked                  -> SIWE sign-in then the app
  *
  * Structure:
  * - Background: Frosted White (#F4F5FF)
- * - Sidebar: Navigation principale (caché sur mobile)
+ * - Sidebar: Primary navigation (hidden on mobile)
  * - TopHeader: Search bar + Wallet + Token price
- * - Outlet: Zone de rendu des pages enfants (React Router)
+ * - Outlet: Render slot for child pages (React Router)
  *
- * Note: <Outlet /> est le point d'injection des pages définies dans routes.ts
+ * Note: <Outlet /> is the injection point for the pages defined in routes.ts
  */
 
 import { useEffect } from 'react';
@@ -61,10 +61,10 @@ function AuthenticatedApp() {
 
             {/* Main Content Area */}
             <div className="flex-1 flex flex-col overflow-hidden">
-              {/* Top Header avec search, wallet, token price */}
+              {/* Top Header with search, wallet, token price */}
               <TopHeader />
 
-              {/* Page Content - Les pages sont rendues ici via React Router */}
+              {/* Page Content - Rendered here via React Router */}
               <Outlet />
             </div>
           </div>

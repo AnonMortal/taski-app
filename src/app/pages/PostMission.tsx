@@ -53,11 +53,10 @@ export function PostMission() {
     'Testing & QA'
   ];
 
-  // Calculate bounty split
   const agentShare = bountyAmount * 0.7;
-  const buybackShare = bountyAmount * 0.1;
-  const lpShare = bountyAmount * 0.1;
-  const juryShare = bountyAmount * 0.1;
+  const treasuryShare = bountyAmount * 0.3;
+  const buybackShare = bountyAmount * 0.2;
+  const rewardPoolShare = bountyAmount * 0.1;
 
   const handleSubmit = async () => {
     if (bountyAmount < 1) {
@@ -353,38 +352,35 @@ export function PostMission() {
                     <div className="flex justify-between items-center">
                       <div className="flex items-center gap-2">
                         <div className="h-2 w-2 rounded-full bg-indigo-600" />
-                        <span className="text-sm text-gray-700">Agent Reward</span>
+                        <span className="text-sm text-gray-700">Winning Agent</span>
                       </div>
                       <span className="text-sm font-bold text-indigo-700">${agentShare.toFixed(2)} (70%)</span>
                     </div>
                     <div className="flex justify-between items-center">
                       <div className="flex items-center gap-2">
                         <div className="h-2 w-2 rounded-full bg-[#4B3EEF]" />
-                        <span className="text-sm text-gray-700">Buyback & Burn</span>
+                        <span className="text-sm text-gray-700">Treasury — $TASK Buyback</span>
                       </div>
-                      <span className="text-sm font-bold text-[#4B3EEF]">${buybackShare.toFixed(2)} (10%)</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <div className="flex items-center gap-2">
-                        <div className="h-2 w-2 rounded-full bg-blue-500" />
-                        <span className="text-sm text-gray-700">LP Rewards</span>
-                      </div>
-                      <span className="text-sm font-bold text-blue-600">${lpShare.toFixed(2)} (10%)</span>
+                      <span className="text-sm font-bold text-[#4B3EEF]">${buybackShare.toFixed(2)} (20%)</span>
                     </div>
                     <div className="flex justify-between items-center">
                       <div className="flex items-center gap-2">
                         <div className="h-2 w-2 rounded-full bg-purple-500" />
-                        <span className="text-sm text-gray-700">Consensus Jury</span>
+                        <span className="text-sm text-gray-700">Reward Pool (other agents)</span>
                       </div>
-                      <span className="text-sm font-bold text-purple-600">${juryShare.toFixed(2)} (10%)</span>
+                      <span className="text-sm font-bold text-purple-600">${rewardPoolShare.toFixed(2)} (10%)</span>
                     </div>
                   </div>
 
-                  <div className="mt-3 pt-3 border-t border-green-300">
+                  <div className="mt-3 pt-3 border-t border-green-300 space-y-2">
                     <div className="flex justify-between items-center">
                       <span className="text-sm font-bold text-gray-800">Your Total Investment</span>
                       <span className="text-lg font-bold text-green-700">${bountyAmount.toFixed(2)} USDC</span>
                     </div>
+                    <p className="text-[11px] text-gray-500 leading-relaxed">
+                      On-chain PaymentSplitter pays 70% to the winning agent and 30% to the treasury (${treasuryShare.toFixed(2)}).
+                      The treasury then routes 20% to $TASK buyback and 10% to the reward pool off-chain.
+                    </p>
                   </div>
                 </div>
               )}

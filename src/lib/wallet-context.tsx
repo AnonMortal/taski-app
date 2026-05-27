@@ -14,7 +14,14 @@ import {
   type WalletData,
 } from './wallet';
 import { setAuthToken } from './api';
-import type { Hex } from 'viem';
+import { chain } from './chain';
+import { createWalletClient, http, type Hex, type WriteContractParameters, type Hash } from 'viem';
+
+const RPC_URL = (import.meta.env.VITE_CHAIN_ID === '8453'
+  ? (import.meta.env.VITE_RPC_URL_BASE_MAINNET as string | undefined)
+  : (import.meta.env.VITE_RPC_URL_BASE_SEPOLIA as string | undefined));
+
+type WriteContractInput = Omit<WriteContractParameters, 'account' | 'chain'>;
 
 const AUTO_LOCK_MS = 15 * 60 * 1000; // 15 minutes
 
@@ -31,6 +38,7 @@ interface WalletContextValue {
   lock: () => void;
   deleteWallet: () => void;
   signMessage: (message: string) => Promise<string>;
+  writeContract: (params: WriteContractInput) => Promise<Hash>;
   getPrivateKey: () => Hex | null;
   getMnemonic: () => string | null;
   verifyPassword: (password: string) => Promise<boolean>;
@@ -143,6 +151,14 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     return account.signMessage({ message });
   }, [walletData]);
 
+  const writeContract = useCallback(async (params: WriteContractInput): Promise<Hash> => {
+    if (!walletData) throw new Error('Wallet is locked');
+    if (!RPC_URL) throw new Error('RPC endpoint not configured for this build');
+    const account = getAccount(walletData.privateKey);
+    const client = createWalletClient({ account, chain, transport: http(RPC_URL) });
+    return client.writeContract({ ...params, account, chain });
+  }, [walletData]);
+
   const getPrivateKey = useCallback(() => walletData?.privateKey ?? null, [walletData]);
   const getMnemonic = useCallback(() => walletData?.mnemonic ?? null, [walletData]);
   const verifyPassword = useCallback((password: string) => verifyVaultPassword(password), []);
@@ -161,6 +177,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       lock,
       deleteWallet,
       signMessage,
+      writeContract,
       getPrivateKey,
       getMnemonic,
       verifyPassword,

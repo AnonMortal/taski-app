@@ -9,11 +9,21 @@ if (!API_URL) {
 // Internal session storage key for the auth (JWT) token.
 const TOKEN_KEY = "taskfi_auth_token";
 
+export const AUTH_TOKEN_EVENT = "taskfi.auth-token-change";
+
 export function setAuthToken(token: string | null) {
   if (token) {
     sessionStorage.setItem(TOKEN_KEY, token);
   } else {
     sessionStorage.removeItem(TOKEN_KEY);
+  }
+  // Let subscribers (e.g. MissionsContext) re-fetch protected endpoints once
+  // a SIWE token lands. Without this, the very first /api/missions/my call
+  // races SIWE: it fires from MissionsContext on mount before SIWE has signed,
+  // the 401 is swallowed, the user sees an empty Mission History until they
+  // navigate or reload.
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent(AUTH_TOKEN_EVENT, { detail: { hasToken: !!token } }));
   }
 }
 

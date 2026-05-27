@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
-import { api } from '../../lib/api';
+import { api, AUTH_TOKEN_EVENT } from '../../lib/api';
 import { showError, showSuccess } from '../../lib/toast';
 import {
   listPendingMissions,
@@ -155,6 +155,20 @@ export function MissionsProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     void reload();
+  }, [reload]);
+
+  // Re-fetch protected endpoints (which include /api/missions/my) whenever a
+  // SIWE token is freshly issued. The initial mount races SIWE: reload fires
+  // before signMessage resolves, /my returns 401, and we'd render an empty
+  // Mission History until the user navigates. Listening for the auth event
+  // closes the gap.
+  useEffect(() => {
+    function onTokenChange(e: Event) {
+      const ev = e as CustomEvent<{ hasToken: boolean }>;
+      if (ev.detail?.hasToken) void reload();
+    }
+    window.addEventListener(AUTH_TOKEN_EVENT, onTokenChange);
+    return () => window.removeEventListener(AUTH_TOKEN_EVENT, onTokenChange);
   }, [reload]);
 
   const addMission = useCallback(

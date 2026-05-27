@@ -1,6 +1,77 @@
-import { Link2, Twitter, MessageCircle, Github, FileText, Youtube, Send, Globe, Book, Code, Users } from 'lucide-react';
+import { Link2, Twitter, MessageCircle, Github, FileText, Send, Globe, Book, Code, Users, Copy, Check } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { api } from '../../lib/api';
+import { showSuccess } from '../../lib/toast';
+
+interface ChainConfig {
+  chainId: number;
+  usdcAddress: string;
+  taskTokenAddress: string | null;
+  taskManagerAddress: string | null;
+  paymentSplitterAddress: string | null;
+  stakingRegistryAddress: string | null;
+  reputationEngineAddress: string | null;
+  agentPassportAddress?: string | null;
+}
+
+const APP_DOMAIN = 'taskfi.xyz';
+const APP_URL = 'https://app.taskfi.xyz';
+const DOCS_URL = 'https://docs.taskfi.xyz';
+const GITHUB_ORG = 'https://github.com/taskfi-labs';
+
+function explorerBase(chainId: number): string {
+  return chainId === 84532 ? 'https://sepolia.basescan.org' : 'https://basescan.org';
+}
+
+function explorerAddress(chainId: number, address: string | null | undefined): string | null {
+  if (!address) return null;
+  return `${explorerBase(chainId)}/address/${address}`;
+}
+
+function shortAddress(address: string | null | undefined): string {
+  if (!address) return '—';
+  return `${address.slice(0, 6)}…${address.slice(-4)}`;
+}
 
 export function Links() {
+  const [config, setConfig] = useState<ChainConfig | null>(null);
+  const [copied, setCopied] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    api.public
+      .config()
+      .then((c) => {
+        if (!cancelled) setConfig(c as ChainConfig);
+      })
+      .catch(() => {
+        if (!cancelled) setConfig(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const copy = (label: string, value: string) => {
+    navigator.clipboard.writeText(value).then(() => {
+      setCopied(label);
+      showSuccess(`${label} copied`);
+      setTimeout(() => setCopied(null), 1500);
+    });
+  };
+
+  const chainId = config?.chainId ?? 84532;
+  const networkLabel = chainId === 84532 ? 'Base Sepolia (testnet)' : chainId === 8453 ? 'Base Mainnet' : `Chain ${chainId}`;
+
+  const contracts: { label: string; address: string | null | undefined }[] = [
+    { label: '$TASK Token', address: config?.taskTokenAddress },
+    { label: 'TaskManager', address: config?.taskManagerAddress },
+    { label: 'PaymentSplitter', address: config?.paymentSplitterAddress },
+    { label: 'StakingRegistry', address: config?.stakingRegistryAddress },
+    { label: 'ReputationEngine', address: config?.reputationEngineAddress },
+    { label: 'AgentPassport', address: config?.agentPassportAddress },
+  ];
+
   const linkCategories = [
     {
       title: 'Official Resources',
@@ -9,31 +80,9 @@ export function Links() {
       bgColor: 'from-indigo-50 to-purple-50',
       borderColor: 'border-indigo-200',
       links: [
-        { 
-          name: 'Official Website', 
-          url: 'https://taskfi.ai', 
-          icon: Globe,
-          description: 'Visit our main website'
-        },
-        { 
-          name: 'Whitepaper', 
-          url: 'https://docs.taskfi.ai/whitepaper', 
-          icon: FileText,
-          description: 'Read our complete vision'
-        },
-        { 
-          name: 'Documentation', 
-          url: 'https://docs.taskfi.ai', 
-          icon: Book,
-          description: 'Complete technical docs'
-        },
-        { 
-          name: 'API Reference', 
-          url: 'https://api.taskfi.ai/docs', 
-          icon: Code,
-          description: 'Developer API documentation'
-        }
-      ]
+        { name: 'App', url: APP_URL, icon: Globe, description: 'Open the TaskFi dashboard' },
+        { name: 'Documentation', url: DOCS_URL, icon: Book, description: 'Technical docs and concepts' },
+      ],
     },
     {
       title: 'Community',
@@ -42,25 +91,10 @@ export function Links() {
       bgColor: 'from-blue-50 to-cyan-50',
       borderColor: 'border-blue-200',
       links: [
-        { 
-          name: 'Discord', 
-          url: 'https://discord.gg/taskfi', 
-          icon: MessageCircle,
-          description: 'Join our community'
-        },
-        { 
-          name: 'Telegram', 
-          url: 'https://t.me/taskfiai', 
-          icon: Send,
-          description: 'Official announcements'
-        },
-        { 
-          name: 'Twitter / X', 
-          url: 'https://twitter.com/taskfiai', 
-          icon: Twitter,
-          description: 'Follow us for updates'
-        }
-      ]
+        { name: 'Twitter / X', url: `https://twitter.com/${APP_DOMAIN.replace('.xyz', '')}`, icon: Twitter, description: 'Updates and announcements' },
+        { name: 'Discord', url: 'https://discord.gg/taskfi', icon: MessageCircle, description: 'Join the discussion' },
+        { name: 'Telegram', url: 'https://t.me/taskfi', icon: Send, description: 'Telegram channel' },
+      ],
     },
     {
       title: 'Development',
@@ -69,58 +103,15 @@ export function Links() {
       bgColor: 'from-purple-50 to-violet-50',
       borderColor: 'border-purple-200',
       links: [
-        { 
-          name: 'GitHub', 
-          url: 'https://github.com/taskfi-ai', 
-          icon: Github,
-          description: 'Open source repositories'
-        },
-        { 
-          name: 'Smart Contracts', 
-          url: 'https://basescan.org/address/0x...', 
-          icon: FileText,
-          description: 'Verified on BaseScan'
-        },
-        { 
-          name: 'SDK & Libraries', 
-          url: 'https://github.com/taskfi-ai/sdk', 
-          icon: Code,
-          description: 'Developer tools'
-        }
-      ]
+        { name: 'GitHub', url: GITHUB_ORG, icon: Github, description: 'Open-source repositories' },
+        { name: 'SDK (@taskfi-labs/sdk)', url: `${GITHUB_ORG}/sdk-agent`, icon: Code, description: 'TypeScript agent SDK' },
+        { name: 'Smart Contracts', url: `${GITHUB_ORG}/contracts`, icon: FileText, description: 'Solidity sources' },
+      ],
     },
-    {
-      title: 'Media & Content',
-      icon: Youtube,
-      color: 'from-red-600 to-rose-600',
-      bgColor: 'from-red-50 to-rose-50',
-      borderColor: 'border-red-200',
-      links: [
-        { 
-          name: 'YouTube', 
-          url: 'https://youtube.com/@taskfiai', 
-          icon: Youtube,
-          description: 'Video tutorials & demos'
-        },
-        { 
-          name: 'Medium', 
-          url: 'https://medium.com/taskfi-ai', 
-          icon: FileText,
-          description: 'Blog & articles'
-        },
-        { 
-          name: 'Brand Kit', 
-          url: 'https://taskfi.ai/brand', 
-          icon: FileText,
-          description: 'Logos & brand assets'
-        }
-      ]
-    }
   ];
 
   return (
     <main className="flex-1 overflow-y-auto p-4 md:p-8">
-      {/* Page Header */}
       <div className="mb-6 md:mb-8">
         <div className="flex items-center gap-3">
           <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-600 to-purple-600 shadow-lg">
@@ -128,60 +119,11 @@ export function Links() {
           </div>
           <div>
             <h2 className="text-2xl md:text-3xl font-bold text-[#1A1B25]">Important Links</h2>
-            <p className="text-sm text-gray-600">Quick access to all TaskFi resources</p>
+            <p className="text-sm text-gray-600">App, docs, contracts and community</p>
           </div>
         </div>
       </div>
 
-      {/* Featured Banner */}
-      <div className="mb-8">
-        <div className="rounded-2xl bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 p-8 shadow-xl">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-            <div>
-              <h3 className="text-2xl font-bold text-white mb-2">Connect with TaskFi</h3>
-              <p className="text-white/90 text-sm mb-4 max-w-2xl">
-                Join our growing community of AI agents, developers, and enterprises building the future of autonomous work.
-              </p>
-              <div className="flex flex-wrap gap-3">
-                <a
-                  href="https://discord.gg/taskfi"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-white text-indigo-700 font-semibold hover:bg-gray-100 transition-all shadow-md hover:shadow-lg"
-                >
-                  <MessageCircle className="h-4 w-4" />
-                  Join Discord
-                </a>
-                <a
-                  href="https://twitter.com/taskfiai"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-white/10 backdrop-blur-md text-white font-semibold hover:bg-white/20 transition-all border border-white/30"
-                >
-                  <Twitter className="h-4 w-4" />
-                  Follow on X
-                </a>
-                <a
-                  href="https://github.com/taskfi-ai"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-white/10 backdrop-blur-md text-white font-semibold hover:bg-white/20 transition-all border border-white/30"
-                >
-                  <Github className="h-4 w-4" />
-                  GitHub
-                </a>
-              </div>
-            </div>
-            <div className="flex-shrink-0">
-              <div className="h-24 w-24 rounded-2xl bg-white/10 backdrop-blur-md border-2 border-white/30 flex items-center justify-center">
-                <Link2 className="h-12 w-12 text-white" />
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Link Categories */}
       <div className="space-y-8">
         {linkCategories.map((category, idx) => {
           const CategoryIcon = category.icon;
@@ -193,7 +135,7 @@ export function Links() {
                 </div>
                 <h3 className="text-xl font-bold text-[#1A1B25]">{category.title}</h3>
               </div>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {category.links.map((link, linkIdx) => {
                   const LinkIcon = link.icon;
@@ -231,59 +173,53 @@ export function Links() {
         })}
       </div>
 
-      {/* Token Information */}
       <div className="mt-8">
         <h3 className="text-lg font-bold text-[#1A1B25] mb-4 flex items-center gap-2">
           <FileText className="h-5 w-5 text-indigo-600" />
-          Token Information
+          On-chain Contracts
         </h3>
         <div className="rounded-xl border border-indigo-200/40 bg-white/80 backdrop-blur-md p-6 shadow-lg">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <p className="text-sm font-semibold text-gray-600 mb-2">Token Name</p>
-              <p className="text-lg font-bold text-[#1A1B25]">TaskFi Token ($TASK)</p>
-            </div>
-            <div>
-              <p className="text-sm font-semibold text-gray-600 mb-2">Network</p>
-              <p className="text-lg font-bold text-[#1A1B25]">Base</p>
-            </div>
-            <div className="md:col-span-2">
-              <p className="text-sm font-semibold text-gray-600 mb-2">Contract Address</p>
-              <div className="flex items-center gap-2">
-                <code className="flex-1 px-4 py-2 rounded-lg bg-gray-100 text-sm font-mono text-gray-700">
-                  0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb5
-                </code>
-                <button className="px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 transition-colors">
-                  Copy
-                </button>
-              </div>
-            </div>
+          <div className="mb-4 flex items-center justify-between">
+            <p className="text-sm font-semibold text-gray-600">Network</p>
+            <p className="text-sm font-bold text-[#1A1B25]">{networkLabel}</p>
           </div>
-        </div>
-      </div>
-
-      {/* Contact & Support */}
-      <div className="mt-8">
-        <h3 className="text-lg font-bold text-[#1A1B25] mb-4">Need Help?</h3>
-        <div className="rounded-xl border border-indigo-200/40 bg-white/80 backdrop-blur-md p-6 shadow-lg">
-          <p className="text-sm text-gray-600 mb-4">
-            Have questions or need support? Our team is here to help you succeed.
-          </p>
-          <div className="flex flex-wrap gap-3">
-            <a
-              href="mailto:support@taskfi.ai"
-              className="px-5 py-2.5 rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold hover:shadow-lg hover:scale-[1.02] transition-all"
-            >
-              Email Support
-            </a>
-            <a
-              href="https://discord.gg/taskfi"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="px-5 py-2.5 rounded-lg border-2 border-indigo-200 bg-white text-indigo-700 font-semibold hover:bg-indigo-50 transition-all"
-            >
-              Community Support
-            </a>
+          <div className="space-y-2">
+            {contracts.map(({ label, address }) => {
+              const explorerUrl = explorerAddress(chainId, address);
+              return (
+                <div
+                  key={label}
+                  className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 px-4 py-3 rounded-lg bg-gray-50 border border-gray-200"
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm font-semibold text-[#1A1B25] min-w-[140px]">{label}</span>
+                    <code className="text-xs font-mono text-gray-700 break-all">{address ?? 'not deployed'}</code>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {address && (
+                      <button
+                        onClick={() => copy(label, address)}
+                        className="px-2.5 py-1 rounded-md bg-white border border-gray-300 text-xs font-semibold text-gray-700 hover:bg-gray-100 transition-colors inline-flex items-center gap-1"
+                        type="button"
+                      >
+                        {copied === label ? <Check className="h-3 w-3 text-green-600" /> : <Copy className="h-3 w-3" />}
+                        {shortAddress(address)}
+                      </button>
+                    )}
+                    {explorerUrl && (
+                      <a
+                        href={explorerUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-2.5 py-1 rounded-md bg-indigo-600 text-white text-xs font-semibold hover:bg-indigo-700 transition-colors"
+                      >
+                        Explorer
+                      </a>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>

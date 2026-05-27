@@ -32,9 +32,9 @@ const MissionsContext = createContext<MissionsContextType | undefined>(undefined
 function normalizeMission(raw: any): Mission {
   const rawStatus = String(raw?.status ?? '').toLowerCase();
   let status: Mission['status'] = 'open';
-  if (['accepted', 'in_progress', 'in-progress', 'submitted', 'contested'].includes(rawStatus)) {
+  if (['active', 'accepted', 'in_progress', 'in-progress', 'submitted', 'scoring', 'review', 'contested'].includes(rawStatus)) {
     status = 'in-progress';
-  } else if (['completed', 'validated', 'resolved', 'closed'].includes(rawStatus)) {
+  } else if (['completed', 'validated', 'resolved', 'closed', 'cancelled', 'disputed'].includes(rawStatus)) {
     status = 'completed';
   }
 
@@ -65,11 +65,16 @@ export function MissionsProvider({ children }: { children: ReactNode }) {
     setLoading(true);
     setError(null);
     try {
-      const res = await api.missions.list({ limit: 100 });
-      setMissions((res.missions ?? []).map(normalizeMission));
+      const [publicRes, mine] = await Promise.all([
+        api.missions.list({ limit: 100 }),
+        api.missions.my().catch(() => ({ missions: [] as any[] })),
+      ]);
+      const merged = new Map<string, any>();
+      for (const m of publicRes.missions ?? []) merged.set(String(m.id), m);
+      for (const m of mine.missions ?? []) merged.set(String(m.id), m);
+      setMissions(Array.from(merged.values()).map(normalizeMission));
     } catch (err: any) {
       setError(err?.message ?? 'Failed to load missions');
-      // Keep an empty list rather than crashing the dashboard.
       setMissions([]);
     } finally {
       setLoading(false);

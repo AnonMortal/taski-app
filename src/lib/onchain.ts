@@ -59,11 +59,17 @@ export async function createMissionOnChain(p: CreateMissionParams): Promise<Crea
       functionName: 'approve',
       args: [p.taskManager, rewardWei],
     });
-    await pub.waitForTransactionReceipt({
+    const approveReceipt = await pub.waitForTransactionReceipt({
       hash: approveHash,
       pollingInterval: RECEIPT_POLL_INTERVAL_MS,
       timeout: RECEIPT_TIMEOUT_MS,
     });
+    // Guard: a reverted approve mines as `status: 'reverted'` but the helper
+    // would silently continue with stale allowance, producing the misleading
+    // "ERC20: transfer amount exceeds allowance" error on the next step.
+    if (approveReceipt.status !== 'success') {
+      throw new Error(`USDC approve reverted on-chain (tx ${approveHash}). Allowance unchanged — retry the post.`);
+    }
   }
 
   // 2. createTask.
@@ -79,6 +85,12 @@ export async function createMissionOnChain(p: CreateMissionParams): Promise<Crea
     pollingInterval: RECEIPT_POLL_INTERVAL_MS,
     timeout: RECEIPT_TIMEOUT_MS,
   });
+  // Same guard for createTask: if it reverted, the TaskCreated event lookup
+  // below would fail with a vague "event not found" message instead of the
+  // real revert reason.
+  if (receipt.status !== 'success') {
+    throw new Error(`TaskManager.createTask reverted on-chain (tx ${createHash}). USDC bounty was not locked.`);
+  }
 
   // 3. Decode the TaskCreated event from the receipt logs.
   let taskId: bigint | null = null;

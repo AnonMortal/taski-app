@@ -4,19 +4,16 @@ import { Link } from 'react-router';
 import { useMissions } from '../contexts/MissionsContext';
 import { api } from '../../lib/api';
 
-type JuryStatus = 'approved' | 'pending';
-const JURY_MODELS = ['GPT-4', 'Claude', 'Gemini', 'Llama', 'Mistral'];
+type JuryStatus = 'approved' | 'rejected' | 'pending';
+const JURY_LABELS = ['Completeness', 'Coherence', 'Richness', 'Format', 'Originality'];
 
-// Build a jury-consensus array from a mission status: completed missions show
-// all judges approved, anything in flight shows all pending. This is the only
-// status signal the public missions endpoint exposes.
-const juryFromStatus = (uiStatus: string): { model: string; status: JuryStatus }[] => {
-  const allApproved = uiStatus === 'Completed';
-  return JURY_MODELS.map(model => ({
-    model,
-    status: (allApproved ? 'approved' : 'pending') as JuryStatus,
-  }));
+const VOTE_TO_STATUS: Record<string, JuryStatus> = {
+  valid: 'approved',
+  reject: 'rejected',
+  pending: 'pending',
 };
+
+const labelFromIndex = (i: number) => JURY_LABELS[i] ?? `Judge ${i + 1}`;
 
 interface Analytics {
   totalSpent: number;
@@ -96,18 +93,26 @@ export function Enterprise() {
     return 'Finding Agent' as const;
   };
 
-  // Posted missions come from the backend (MissionsContext).
   const postedMissions = userMissions.map(mission => {
     const status = mapMissionStatus(mission.status);
+    const consensusFromVotes = mission.juryVotes && mission.juryVotes.length > 0
+      ? mission.juryVotes.map((vote, idx) => ({
+          model: labelFromIndex(idx),
+          status: VOTE_TO_STATUS[vote] ?? 'pending' as JuryStatus,
+        }))
+      : Array.from({ length: 5 }, (_, idx) => ({
+          model: labelFromIndex(idx),
+          status: 'pending' as JuryStatus,
+        }));
     return {
       id: mission.id,
       title: mission.title,
       bounty: mission.bountyAmount,
       status,
-      agent: null as string | null,
+      agent: mission.winnerAddress ?? null,
       postedDate: mission.timestamp.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
       deadline: status === 'Completed' ? 'Completed' : '—',
-      juryConsensus: juryFromStatus(status),
+      juryConsensus: consensusFromVotes,
     };
   });
 
@@ -359,27 +364,30 @@ export function Enterprise() {
 
                     {/* Jury Models */}
                     <div className="space-y-2">
-                      {mission.juryConsensus.map((jury) => (
-                        <div key={jury.model} className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <Circle
-                              className={`h-3 w-3 ${
-                                jury.status === 'approved'
-                                  ? 'fill-green-500 text-green-500'
-                                  : 'fill-gray-300 text-gray-300 animate-pulse'
-                              }`}
-                            />
-                            <span className="text-sm text-gray-700">{jury.model}</span>
+                      {mission.juryConsensus.map((jury) => {
+                        const isApproved = jury.status === 'approved';
+                        const isRejected = jury.status === 'rejected';
+                        const dotClass = isApproved
+                          ? 'fill-green-500 text-green-500'
+                          : isRejected
+                            ? 'fill-red-500 text-red-500'
+                            : 'fill-gray-300 text-gray-300 animate-pulse';
+                        const textClass = isApproved
+                          ? 'text-green-600'
+                          : isRejected
+                            ? 'text-red-600'
+                            : 'text-gray-400';
+                        const label = isApproved ? '✓ Approved' : isRejected ? '✗ Rejected' : 'Pending…';
+                        return (
+                          <div key={jury.model} className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <Circle className={`h-3 w-3 ${dotClass}`} />
+                              <span className="text-sm text-gray-700">{jury.model}</span>
+                            </div>
+                            <span className={`text-xs font-semibold ${textClass}`}>{label}</span>
                           </div>
-                          <span
-                            className={`text-xs font-semibold ${
-                              jury.status === 'approved' ? 'text-green-600' : 'text-gray-400'
-                            }`}
-                          >
-                            {jury.status === 'approved' ? '✓ Approved' : 'Pending...'}
-                          </span>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                 </div>

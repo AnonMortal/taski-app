@@ -13,6 +13,9 @@ export interface Agent {
   successRate: number;
   skills: string[];
   webhookUrl?: string;
+  totalMissions: number;
+  wins: number;
+  status: 'Active' | 'Inactive';
 }
 
 interface AgentsContextType {
@@ -20,7 +23,7 @@ interface AgentsContextType {
   loading: boolean;
   error: string | null;
   reload: () => Promise<void>;
-  addAgent: (agent: Omit<Agent, 'id'>) => void;
+  addAgent: (agent: Omit<Agent, 'id' | 'totalMissions' | 'wins' | 'status'> & Partial<Pick<Agent, 'totalMissions' | 'wins' | 'status'>>) => void;
 }
 
 const AgentsContext = createContext<AgentsContextType | undefined>(undefined);
@@ -36,18 +39,25 @@ function normalizeAgent(raw: any, index: number): Agent {
       ? raw.tags
       : [];
 
+  const totalMissions = Number(raw?.totalMissions ?? raw?.acceptances ?? 0);
+  const wins = Number(raw?.wins ?? raw?.completedMissions ?? raw?.completed ?? 0);
+  const rawStatus = String(raw?.status ?? 'Active').toLowerCase();
+  const status: Agent['status'] = rawStatus === 'inactive' ? 'Inactive' : 'Active';
+
   return {
-    // Backend ids are addresses/strings; pages only need a stable unique key.
     id: typeof raw?.id === 'number' ? raw.id : index + 1,
     name: raw?.name ?? raw?.displayName ?? `Agent #${index + 1}`,
     bio: raw?.bio ?? raw?.description,
-    specialization: raw?.specialization ?? skills[0] ?? 'General',
+    specialization: raw?.specialization ?? raw?.specialty ?? skills[0] ?? 'General',
     reputation: Number(raw?.reputation ?? raw?.reputationScore ?? 0),
     matchScore: raw?.matchScore != null ? Number(raw.matchScore) : undefined,
-    currentStake: Number(raw?.currentStake ?? raw?.stake ?? raw?.stakedAmount ?? 0),
+    currentStake: Number(raw?.currentStake ?? raw?.stake ?? raw?.stakedAmount ?? raw?.staked ?? 0),
     successRate: Number(raw?.successRate ?? raw?.winRate ?? 0),
     skills,
     webhookUrl: raw?.webhookUrl,
+    totalMissions,
+    wins,
+    status,
   };
 }
 
@@ -77,10 +87,19 @@ export function AgentsProvider({ children }: { children: ReactNode }) {
   // Agent creation/registration happens on-chain via the dedicated flow.
   // Here we optimistically append the new agent to the local list so the UI
   // reflects it immediately after deployment.
-  const addAgent = useCallback((newAgent: Omit<Agent, 'id'>) => {
+  const addAgent = useCallback((newAgent: Omit<Agent, 'id' | 'totalMissions' | 'wins' | 'status'> & Partial<Pick<Agent, 'totalMissions' | 'wins' | 'status'>>) => {
     setAgents(prev => {
       const id = Math.max(0, ...prev.map(a => a.id)) + 1;
-      return [...prev, { ...newAgent, id }];
+      return [
+        ...prev,
+        {
+          totalMissions: 0,
+          wins: 0,
+          status: 'Active',
+          ...newAgent,
+          id,
+        } as Agent,
+      ];
     });
     // Best-effort backend registration; failure does not block the UI.
     api.auth.registerAgent().catch((err: any) => {

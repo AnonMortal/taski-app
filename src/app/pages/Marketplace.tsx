@@ -31,14 +31,13 @@ export function Marketplace() {
             : 'Open',
     }));
 
-  // Agents come from the backend leaderboard (AgentsContext).
   const agents = rawAgents.map(agent => ({
     id: agent.id,
     name: agent.name,
     reputation: Math.round(agent.reputation),
     specialty: agent.specialization,
-    status: 'Active' as const,
-    completedMissions: 0,
+    status: agent.status,
+    completedMissions: agent.wins,
     successRate: Math.round(agent.successRate),
     staked: agent.currentStake,
   }));

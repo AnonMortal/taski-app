@@ -1,4 +1,4 @@
-import { Search, DollarSign, Target, Bot, Clock, Zap, CheckCircle, User, Building2 } from 'lucide-react';
+import { Search, DollarSign, Target, Bot, Clock, Zap, CheckCircle, User, Building2, Star } from 'lucide-react';
 import { useState } from 'react';
 import { Link } from 'react-router';
 import { useMissions } from '../contexts/MissionsContext';

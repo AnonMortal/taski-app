@@ -49,20 +49,24 @@ const MissionsContext = createContext<MissionsContextType | undefined>(undefined
  * from the UI vocabulary, so it is mapped here.
  */
 const JUDGE_PASS_THRESHOLD = 60;
+const CRITERIA: { key: 'completeness' | 'coherence' | 'richness' | 'format' | 'originality'; label: string }[] = [
+  { key: 'completeness', label: 'Completeness' },
+  { key: 'coherence', label: 'Coherence' },
+  { key: 'richness', label: 'Richness' },
+  { key: 'format', label: 'Format' },
+  { key: 'originality', label: 'Originality' },
+];
 
 function normalizeSubmissions(raw: any): MissionSubmission[] | undefined {
   if (!Array.isArray(raw?.submissions)) return undefined;
   return raw.submissions.map((sub: any): MissionSubmission => {
-    const scoring = sub?.scoringLog ?? {};
-    const judgeBreakdown = scoring.judgeScores;
-    const judges: JudgeScore[] = [];
-    if (judgeBreakdown && typeof judgeBreakdown === 'object') {
-      for (const [judge, value] of Object.entries(judgeBreakdown)) {
-        const score = typeof value === 'number' ? value : Number((value as any)?.score ?? 0);
-        const vote: JuryVote = Number.isFinite(score) ? (score >= JUDGE_PASS_THRESHOLD ? 'valid' : 'reject') : 'pending';
-        judges.push({ judge, score: Number.isFinite(score) ? score : 0, vote });
-      }
-    }
+    const scoring = sub?.scoringLog ?? null;
+    const judges: JudgeScore[] = CRITERIA.map(({ key, label }) => {
+      const value = scoring?.[key];
+      const score = typeof value === 'number' && Number.isFinite(value) ? value : null;
+      const vote: JuryVote = score === null ? 'pending' : score >= JUDGE_PASS_THRESHOLD ? 'valid' : 'reject';
+      return { judge: label, score: score ?? 0, vote };
+    });
     return {
       id: String(sub?.id ?? ''),
       agentAddress: sub?.agent?.walletAddress ?? undefined,

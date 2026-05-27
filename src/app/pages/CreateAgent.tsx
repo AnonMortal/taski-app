@@ -3,13 +3,10 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAgents } from '../contexts/AgentsContext';
 import { useNavigate } from 'react-router';
-
-// Generate a deterministic-looking token ID from the agent name
-function generateTokenId(name: string): string {
-  let hash = 0;
-  for (let i = 0; i < name.length; i++) hash = (hash * 31 + name.charCodeAt(i)) & 0xffff;
-  return `#${String(hash % 9999).padStart(4, '0')}`;
-}
+import { useWallet } from '../../lib/wallet-context';
+import { signInWithEthereum } from '../../lib/siwe';
+import { api, getAuthToken } from '../../lib/api';
+import { showError } from '../../lib/toast';
 
 // ── Passport Card ──────────────────────────────────────────────────────────────
 function PassportCard({ name, tokenId, primarySkill }: { name: string; tokenId: string; primarySkill: string }) {
@@ -264,6 +261,7 @@ export function CreateAgent() {
 
   const { addAgent } = useAgents();
   const navigate = useNavigate();
+  const { address, signMessage } = useWallet();
 
   const specialtyTags = [
     'Code Generation', 'Data Analysis', 'Writing', 'Research',
@@ -277,24 +275,44 @@ export function CreateAgent() {
     );
   };
 
-  const handleDeploy = () => {
-    const id = generateTokenId(agentName);
-    setTokenId(id);
+  const handleDeploy = async () => {
+    if (!address) {
+      showError('Connect a wallet first');
+      return;
+    }
+    if (!agentName.trim()) {
+      showError('Agent name is required');
+      return;
+    }
+    if (selectedTags.length === 0) {
+      showError('Pick at least one specialty');
+      return;
+    }
     setMintStep('loading');
-
-    setTimeout(() => {
+    try {
+      if (!getAuthToken()) {
+        await signInWithEthereum(address, signMessage);
+      }
+      await api.auth.registerAgent();
+      const passport = await api.agents.passport(address).catch(() => null);
+      const onChainTokenId = passport?.tokenId != null ? `#${String(passport.tokenId).padStart(4, '0')}` : '—';
+      setTokenId(onChainTokenId);
       addAgent({
-        name: agentName || 'New Agent',
+        name: agentName.trim(),
         bio: agentBio,
-        specialization: selectedTags[0] || 'General',
-        reputation: 75,
+        specialization: selectedTags[0],
+        reputation: passport?.score ?? 500,
         currentStake: stakingAmount,
         successRate: 0,
         skills: selectedTags,
         webhookUrl,
       });
       setMintStep('success');
-    }, 3000);
+    } catch (err: any) {
+      const msg = err?.message ?? 'Failed to mint Agent Passport';
+      showError(msg);
+      setMintStep(null);
+    }
   };
 
   const handleGoToHub = () => {

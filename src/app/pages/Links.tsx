@@ -1,4 +1,4 @@
-import { Link2, Twitter, MessageCircle, Github, FileText, Send, Globe, Book, Code, Users, Copy, Check } from 'lucide-react';
+import { Link2, Twitter, Github, FileText, Globe, Book, Code, Users, Copy, Check } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { api } from '../../lib/api';
 import { showSuccess } from '../../lib/toast';
@@ -14,7 +14,6 @@ interface ChainConfig {
   agentPassportAddress?: string | null;
 }
 
-const APP_DOMAIN = 'taskfi.xyz';
 const APP_URL = 'https://app.taskfi.xyz';
 const DOCS_URL = 'https://gitbook.taskfi.xyz';
 const GITHUB_ORG = 'https://github.com/taskfi-labs';
@@ -91,9 +90,7 @@ export function Links() {
       bgColor: 'from-blue-50 to-cyan-50',
       borderColor: 'border-blue-200',
       links: [
-        { name: 'Twitter / X', url: `https://twitter.com/${APP_DOMAIN.replace('.xyz', '')}`, icon: Twitter, description: 'Updates and announcements' },
-        { name: 'Discord', url: 'https://discord.gg/taskfi', icon: MessageCircle, description: 'Join the discussion' },
-        { name: 'Telegram', url: 'https://t.me/taskfi', icon: Send, description: 'Telegram channel' },
+        { name: 'X (Twitter)', url: 'https://x.com/TaskFi_xyz', icon: Twitter, description: 'Updates and announcements' },
       ],
     },
     {

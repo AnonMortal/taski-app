@@ -2,6 +2,22 @@ import { createContext, useContext, useState, useEffect, useCallback, ReactNode 
 import { api } from '../../lib/api';
 import { showError } from '../../lib/toast';
 
+export type JuryVote = 'valid' | 'reject' | 'pending';
+
+export interface JudgeScore {
+  judge: string;
+  score: number;
+  vote: JuryVote;
+}
+
+export interface MissionSubmission {
+  id: string;
+  agentAddress?: string;
+  finalScore: number | null;
+  isWinner: boolean;
+  judges: JudgeScore[];
+}
+
 export interface Mission {
   id: string;
   title: string;
@@ -12,6 +28,9 @@ export interface Mission {
   companyName?: string;
   timestamp: Date;
   status: 'open' | 'in-progress' | 'completed';
+  winnerAddress?: string;
+  juryVotes?: JuryVote[];
+  submissions?: MissionSubmission[];
 }
 
 interface MissionsContextType {
@@ -29,6 +48,41 @@ const MissionsContext = createContext<MissionsContextType | undefined>(undefined
  * shape the dashboard pages expect. The backend status vocabulary differs
  * from the UI vocabulary, so it is mapped here.
  */
+const JUDGE_PASS_THRESHOLD = 60;
+
+function normalizeSubmissions(raw: any): MissionSubmission[] | undefined {
+  if (!Array.isArray(raw?.submissions)) return undefined;
+  return raw.submissions.map((sub: any): MissionSubmission => {
+    const scoring = sub?.scoringLog ?? {};
+    const judgeBreakdown = scoring.judgeScores;
+    const judges: JudgeScore[] = [];
+    if (judgeBreakdown && typeof judgeBreakdown === 'object') {
+      for (const [judge, value] of Object.entries(judgeBreakdown)) {
+        const score = typeof value === 'number' ? value : Number((value as any)?.score ?? 0);
+        const vote: JuryVote = Number.isFinite(score) ? (score >= JUDGE_PASS_THRESHOLD ? 'valid' : 'reject') : 'pending';
+        judges.push({ judge, score: Number.isFinite(score) ? score : 0, vote });
+      }
+    }
+    return {
+      id: String(sub?.id ?? ''),
+      agentAddress: sub?.agent?.walletAddress ?? undefined,
+      finalScore: typeof sub?.finalScore === 'number' ? sub.finalScore : null,
+      isWinner: Boolean(sub?.isWinner),
+      judges,
+    };
+  });
+}
+
+function aggregateJuryVotes(submissions: MissionSubmission[] | undefined, status: Mission['status']): JuryVote[] | undefined {
+  if (!submissions || submissions.length === 0) return undefined;
+  const winner = submissions.find((s) => s.isWinner);
+  const source = winner ?? submissions.slice().sort((a, b) => (b.finalScore ?? 0) - (a.finalScore ?? 0))[0];
+  if (!source || source.judges.length === 0) {
+    return status === 'completed' ? Array<JuryVote>(5).fill('valid') : undefined;
+  }
+  return source.judges.map((j) => j.vote);
+}
+
 function normalizeMission(raw: any): Mission {
   const rawStatus = String(raw?.status ?? '').toLowerCase();
   let status: Mission['status'] = 'open';
@@ -43,6 +97,11 @@ function normalizeMission(raw: any): Mission {
       ? 'enterprise'
       : 'individual';
 
+  const submissions = normalizeSubmissions(raw);
+  const winnerSubmission = submissions?.find((s) => s.isWinner);
+  const winnerAddress = winnerSubmission?.agentAddress ?? raw?.winner?.walletAddress ?? undefined;
+  const juryVotes = aggregateJuryVotes(submissions, status);
+
   return {
     id: String(raw?.id ?? raw?.missionId ?? ''),
     title: raw?.title ?? 'Untitled mission',
@@ -53,6 +112,9 @@ function normalizeMission(raw: any): Mission {
     companyName: raw?.companyName ?? raw?.poster?.companyName,
     timestamp: raw?.createdAt ? new Date(raw.createdAt) : new Date(),
     status,
+    winnerAddress,
+    juryVotes,
+    submissions,
   };
 }
 

@@ -88,14 +88,30 @@ const mapStatus = (status: string): Mission['status'] => {
 export function MissionsTable() {
   const { missions: userMissions, loading, error } = useMissions();
 
-  const allMissions: Mission[] = userMissions.map((mission) => ({
-    id: mission.id,
-    name: mission.title,
-    reward: mission.bountyAmount,
-    status: mapStatus(mission.status),
-    consensusVotes: ['pending', 'pending', 'pending', 'pending', 'pending'] as ('valid' | 'reject' | 'pending')[],
-    executor: undefined,
-  }));
+  const padVotes = (votes?: ('valid' | 'reject' | 'pending')[]): ('valid' | 'reject' | 'pending')[] => {
+    const base = votes ?? [];
+    if (base.length >= 5) return base.slice(0, 5);
+    return [...base, ...Array<'pending'>(5 - base.length).fill('pending')];
+  };
+
+  const allMissions: Mission[] = userMissions.map((mission) => {
+    const executor = mission.winnerAddress
+      ? {
+          tokenId: `${mission.winnerAddress.slice(0, 6)}…${mission.winnerAddress.slice(-4)}`,
+          name: 'Winning Agent',
+          trustScore: Math.round((mission.submissions?.find((s) => s.isWinner)?.finalScore ?? 0)),
+          slashCount: 0,
+        }
+      : undefined;
+    return {
+      id: mission.id,
+      name: mission.title,
+      reward: mission.bountyAmount,
+      status: mapStatus(mission.status),
+      consensusVotes: padVotes(mission.juryVotes),
+      executor,
+    };
+  });
 
   return (
     <div className="rounded-2xl border border-indigo-200/40 bg-white/80 backdrop-blur-md shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300">

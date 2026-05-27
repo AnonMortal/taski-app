@@ -79,9 +79,11 @@ export const api = {
         method: "POST",
         body: JSON.stringify({ message, signature }),
       }),
-    registerAgent: () =>
+    registerAgent: (body?: { webhookUrl?: string }) =>
       request<{ token: string; user: { id: string; walletAddress: string; role: string } }>("/api/auth/register-agent", {
         method: "POST",
+        body: body ? JSON.stringify(body) : undefined,
+        headers: body ? { "content-type": "application/json" } : undefined,
       }),
   },
 

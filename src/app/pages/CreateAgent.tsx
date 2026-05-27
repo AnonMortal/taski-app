@@ -9,13 +9,27 @@ import { api, getAuthToken } from '../../lib/api';
 import { showError } from '../../lib/toast';
 
 // ── Passport Card ──────────────────────────────────────────────────────────────
-function PassportCard({ name, tokenId, primarySkill }: { name: string; tokenId: string; primarySkill: string }) {
+function PassportCard({
+  name,
+  tokenId,
+  primarySkill,
+  trustScore,
+  missionsCompleted,
+  level,
+}: {
+  name: string;
+  tokenId: string;
+  primarySkill: string;
+  trustScore: number;
+  missionsCompleted: number;
+  level: number;
+}) {
+  const levelLabel = level === 0 ? '0 — Recruit' : String(level);
+  const missionsLabel = missionsCompleted === 0 ? 'Awaiting first job' : 'Lifetime';
   return (
     <div className="relative w-full max-w-sm mx-auto rounded-2xl overflow-hidden shadow-2xl border border-indigo-200">
-      {/* Holographic top bar */}
       <div className="h-1.5 w-full bg-gradient-to-r from-[#4B3EEF] via-[#FF9E80] to-[#7C6FF7]" />
 
-      {/* Card header */}
       <div className="bg-gradient-to-br from-[#1A1B25] to-[#2D2E45] px-6 pt-5 pb-4">
         <div className="flex items-start justify-between mb-4">
           <div>
@@ -27,13 +41,11 @@ function PassportCard({ name, tokenId, primarySkill }: { name: string; tokenId: 
           </div>
         </div>
 
-        {/* Token ID + Soulbound badge row */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5">
             <Hash className="h-3.5 w-3.5 text-gray-400" />
             <span className="text-sm font-mono text-gray-300 tracking-wider">ERC-5192 {tokenId}</span>
           </div>
-          {/* Peach "LOCKED / SOULBOUND" badge */}
           <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#FF9E80]/20 border border-[#FF9E80]/50">
             <Lock className="h-3 w-3 text-[#FF9E80]" />
             <span className="text-[10px] font-bold text-[#FF9E80] uppercase tracking-wide">Locked · Soulbound</span>
@@ -41,36 +53,30 @@ function PassportCard({ name, tokenId, primarySkill }: { name: string; tokenId: 
         </div>
       </div>
 
-      {/* On-chain metadata */}
       <div className="bg-[#F4F5FF] px-6 py-5">
         <p className="text-[10px] font-bold text-[#4B3EEF] uppercase tracking-widest mb-3">On-chain Metadata</p>
         <div className="grid grid-cols-2 gap-3 mb-4">
-          {/* Trust Score */}
           <div className="rounded-xl bg-white border border-green-100 p-3">
             <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-1">Trust Score</p>
-            <p className="text-2xl font-black text-green-600 leading-none">100</p>
-            <p className="text-[10px] text-gray-400 mt-0.5">/ 100 · Genesis</p>
+            <p className="text-2xl font-black text-green-600 leading-none">{trustScore}</p>
+            <p className="text-[10px] text-gray-400 mt-0.5">Grows with completed missions</p>
           </div>
-          {/* Total Missions */}
           <div className="rounded-xl bg-white border border-indigo-100 p-3">
             <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-1">Total Missions</p>
-            <p className="text-2xl font-black text-[#4B3EEF] leading-none">0</p>
-            <p className="text-[10px] text-gray-400 mt-0.5">Awaiting first job</p>
+            <p className="text-2xl font-black text-[#4B3EEF] leading-none">{missionsCompleted}</p>
+            <p className="text-[10px] text-gray-400 mt-0.5">{missionsLabel}</p>
           </div>
-          {/* Slash Count */}
-          <div className="rounded-xl bg-white border border-green-100 p-3">
-            <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-1">Slash Count</p>
-            <p className="text-2xl font-black text-green-600 leading-none">0</p>
-            <p className="text-[10px] text-gray-400 mt-0.5">Clean record</p>
+          <div className="rounded-xl bg-white border border-amber-100 p-3">
+            <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-1">Level</p>
+            <p className="text-2xl font-black text-amber-600 leading-none">{levelLabel}</p>
+            <p className="text-[10px] text-gray-400 mt-0.5">Set by the Jury</p>
           </div>
-          {/* Primary Skill */}
           <div className="rounded-xl bg-white border border-violet-100 p-3">
             <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-1">Primary Skill</p>
             <p className="text-sm font-bold text-violet-700 leading-tight mt-1">{primarySkill || 'General'}</p>
           </div>
         </div>
 
-        {/* locked() = true line */}
         <div className="rounded-lg bg-[#1A1B25]/5 border border-[#4B3EEF]/10 px-3 py-2 font-mono text-[11px] text-[#4B3EEF]">
           <span className="text-gray-400">locked</span>() → <span className="font-bold">true</span>
           <span className="ml-3 text-gray-400">// immutable · non-transferable</span>
@@ -86,12 +92,18 @@ function MintModal({
   agentName,
   tokenId,
   primarySkill,
+  trustScore,
+  missionsCompleted,
+  level,
   onGoToHub,
 }: {
   step: 'loading' | 'success';
   agentName: string;
   tokenId: string;
   primarySkill: string;
+  trustScore: number;
+  missionsCompleted: number;
+  level: number;
   onGoToHub: () => void;
 }) {
   return (
@@ -220,7 +232,14 @@ await agent.identity.mintPassport({
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.25 }}
             >
-              <PassportCard name={agentName} tokenId={tokenId} primarySkill={primarySkill} />
+              <PassportCard
+                name={agentName}
+                tokenId={tokenId}
+                primarySkill={primarySkill}
+                trustScore={trustScore}
+                missionsCompleted={missionsCompleted}
+                level={level}
+              />
             </motion.div>
 
             {/* CTA buttons */}
@@ -258,6 +277,9 @@ export function CreateAgent() {
   const [agentBio, setAgentBio] = useState('');
   const [webhookUrl, setWebhookUrl] = useState('');
   const [tokenId, setTokenId] = useState('');
+  const [trustScore, setTrustScore] = useState(0);
+  const [missionsCompleted, setMissionsCompleted] = useState(0);
+  const [passportLevel, setPassportLevel] = useState(0);
 
   const { addAgent } = useAgents();
   const navigate = useNavigate();
@@ -293,15 +315,18 @@ export function CreateAgent() {
       if (!getAuthToken()) {
         await signInWithEthereum(address, signMessage);
       }
-      await api.auth.registerAgent();
-      const passport = await api.agents.passport(address).catch(() => null);
+      await api.auth.registerAgent(webhookUrl.trim() ? { webhookUrl: webhookUrl.trim() } : undefined);
+      const passport = await fetchPassportWithRetry(address);
       const onChainTokenId = passport?.tokenId != null ? `#${String(passport.tokenId).padStart(4, '0')}` : '—';
       setTokenId(onChainTokenId);
+      setTrustScore(Number(passport?.score ?? 0));
+      setMissionsCompleted(Number(passport?.missionsCompleted ?? 0));
+      setPassportLevel(Number(passport?.level ?? 0));
       addAgent({
         name: agentName.trim(),
         bio: agentBio,
         specialization: selectedTags[0],
-        reputation: passport?.score ?? 500,
+        reputation: Number(passport?.score ?? 0),
         currentStake: stakingAmount,
         successRate: 0,
         skills: selectedTags,
@@ -309,11 +334,32 @@ export function CreateAgent() {
       });
       setMintStep('success');
     } catch (err: any) {
-      const msg = err?.message ?? 'Failed to mint Agent Passport';
+      const msg = err?.shortMessage || err?.message || 'Failed to mint Agent Passport';
+      if (typeof msg === 'string' && msg.includes('Passport exists')) {
+        showError('You already have a passport — opening Agent Hub.');
+        setMintStep(null);
+        navigate('/agent-center');
+        return;
+      }
       showError(msg);
       setMintStep(null);
     }
   };
+
+  async function fetchPassportWithRetry(addr: string, attempts = 3): Promise<any | null> {
+    let last: any = null;
+    for (let i = 0; i < attempts; i++) {
+      try {
+        const p = await api.agents.passport(addr);
+        if (p && p.hasPassport) return p;
+        last = p;
+      } catch (e) {
+        last = null;
+      }
+      if (i < attempts - 1) await new Promise((r) => setTimeout(r, 1500 * (i + 1)));
+    }
+    return last;
+  }
 
   const handleGoToHub = () => {
     setMintStep(null);
@@ -479,6 +525,9 @@ export function CreateAgent() {
             agentName={agentName}
             tokenId={tokenId}
             primarySkill={primarySkill}
+            trustScore={trustScore}
+            missionsCompleted={missionsCompleted}
+            level={passportLevel}
             onGoToHub={handleGoToHub}
           />
         )}

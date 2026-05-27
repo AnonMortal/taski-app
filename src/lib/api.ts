@@ -104,6 +104,12 @@ export const api = {
     getResult: (id: string) => request<any>(`/api/missions/${id}/result`),
     create: (formData: FormData) =>
       request<any>("/api/missions", { method: "POST", body: formData }),
+    linkOrphan: (body: { onChainId: number; txHash: string; title: string; description: string; category: string; reward: number; posterType?: string; companyName?: string }) =>
+      request<any>("/api/missions/link-orphan", {
+        method: "POST",
+        body: JSON.stringify(body),
+        headers: { "content-type": "application/json" },
+      }),
     accept: (id: string) =>
       request<any>(`/api/missions/${id}/accept`, { method: "POST" }),
     submit: (id: string, formData: FormData) =>

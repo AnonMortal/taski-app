@@ -1,6 +1,12 @@
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { api } from '../../lib/api';
-import { showError } from '../../lib/toast';
+import { showError, showSuccess } from '../../lib/toast';
+import {
+  listPendingMissions,
+  removePendingMission,
+  bumpAttempt,
+  type PendingMission,
+} from '../../lib/pendingMissions';
 
 export type JuryVote = 'valid' | 'reject' | 'pending';
 
@@ -38,7 +44,7 @@ interface MissionsContextType {
   loading: boolean;
   error: string | null;
   reload: () => Promise<void>;
-  addMission: (mission: Omit<Mission, 'id' | 'timestamp' | 'status'>, files?: File[]) => Promise<void>;
+  addMission: (mission: Omit<Mission, 'id' | 'timestamp' | 'status'>, files?: File[], onChainId?: number) => Promise<void>;
 }
 
 const MissionsContext = createContext<MissionsContextType | undefined>(undefined);
@@ -152,7 +158,7 @@ export function MissionsProvider({ children }: { children: ReactNode }) {
   }, [reload]);
 
   const addMission = useCallback(
-    async (missionData: Omit<Mission, 'id' | 'timestamp' | 'status'>, files?: File[]) => {
+    async (missionData: Omit<Mission, 'id' | 'timestamp' | 'status'>, files?: File[], onChainId?: number) => {
       try {
         const form = new FormData();
         form.append('title', missionData.title);
@@ -161,10 +167,10 @@ export function MissionsProvider({ children }: { children: ReactNode }) {
         form.append('reward', String(missionData.bountyAmount));
         form.append('posterType', missionData.posterType.toUpperCase());
         if (missionData.companyName) form.append('companyName', missionData.companyName);
+        if (onChainId != null) form.append('onChainId', String(onChainId));
         for (const file of files ?? []) form.append('files', file, file.name);
 
         const created = await api.missions.create(form);
-        // Prepend the created mission (normalized) so the UI updates instantly.
         setMissions(prev => [normalizeMission(created?.mission ?? created), ...prev]);
       } catch (err: any) {
         showError(err?.message ?? 'Failed to create mission');
@@ -173,6 +179,52 @@ export function MissionsProvider({ children }: { children: ReactNode }) {
     },
     [],
   );
+
+  const drainPendingQueue = useCallback(async () => {
+    const pending: PendingMission[] = listPendingMissions();
+    if (pending.length === 0) return;
+    let recovered = 0;
+    let permanentlyFailed = 0;
+    for (const item of pending) {
+      try {
+        await api.missions.linkOrphan({
+          onChainId: item.onChainId,
+          txHash: item.txHash,
+          title: item.form.title,
+          description: item.form.description,
+          category: item.form.category,
+          reward: item.form.reward,
+          posterType: item.form.posterType,
+          companyName: item.form.companyName,
+        });
+        removePendingMission(item.onChainId);
+        recovered++;
+      } catch (err: any) {
+        const status = err?.status ?? err?.response?.status;
+        if (status === 409) {
+          removePendingMission(item.onChainId);
+          recovered++;
+        } else {
+          const stillRetriable = bumpAttempt(item.onChainId);
+          if (!stillRetriable) {
+            removePendingMission(item.onChainId);
+            permanentlyFailed++;
+          }
+        }
+      }
+    }
+    if (recovered > 0) {
+      showSuccess(`Recovered ${recovered} mission${recovered === 1 ? '' : 's'} saved during a network hiccup.`);
+      await reload();
+    }
+    if (permanentlyFailed > 0) {
+      showError(`Failed to recover ${permanentlyFailed} mission${permanentlyFailed === 1 ? '' : 's'}. Their on-chain taskIds are still in your browser console.`);
+    }
+  }, [reload]);
+
+  useEffect(() => {
+    void drainPendingQueue();
+  }, [drainPendingQueue]);
 
   return (
     <MissionsContext.Provider value={{ missions, loading, error, reload, addMission }}>

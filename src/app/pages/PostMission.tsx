@@ -1,9 +1,20 @@
-import { Target, FileText, DollarSign, Shield, Upload, Lock, User, Building2, CheckCircle, X } from 'lucide-react';
-import { useState } from 'react';
+import { Target, FileText, DollarSign, Shield, Upload, Lock, User, Building2, CheckCircle, X, ExternalLink } from 'lucide-react';
+import { useState, useMemo } from 'react';
 import { motion } from 'motion/react';
 import { useMissions } from '../contexts/MissionsContext';
 import { useNavigate } from 'react-router';
 import { showError } from '../../lib/toast';
+import { useWallet } from '../../lib/wallet-context';
+import { useRuntimeConfig } from '../contexts/ConfigContext';
+import { createMissionOnChain, readUsdcBalance, readMinWorkWindow, readEthBalance } from '../../lib/onchain';
+import { decodeOnchainError } from '../../lib/onchain-errors';
+import { pushPendingMission, isPendingQueueFull, removePendingMission } from '../../lib/pendingMissions';
+import { signInWithEthereum } from '../../lib/siwe';
+import { getAuthToken } from '../../lib/api';
+import { chainExplorerUrl } from '../../lib/chain';
+import type { Address, Hash } from 'viem';
+
+type ProgressStep = 'idle' | 'preflight' | 'approving' | 'locking' | 'saving' | 'success' | 'error';
 
 export function PostMission() {
   const [bountyAmount, setBountyAmount] = useState(1000);
@@ -39,6 +50,13 @@ export function PostMission() {
 
   const { addMission } = useMissions();
   const navigate = useNavigate();
+  const { address, signMessage, writeContract } = useWallet();
+  const { config } = useRuntimeConfig();
+  const [progress, setProgress] = useState<ProgressStep>('idle');
+  const [progressTxHash, setProgressTxHash] = useState<Hash | null>(null);
+  const [progressMessage, setProgressMessage] = useState<string>('');
+
+  const explorerTxUrl = useMemo(() => (progressTxHash ? chainExplorerUrl(progressTxHash) : null), [progressTxHash]);
 
   const categories = [
     'Code Generation',
@@ -59,37 +77,126 @@ export function PostMission() {
   const rewardPoolShare = bountyAmount * 0.1;
 
   const handleSubmit = async () => {
-    if (bountyAmount < 1) {
+    if (!Number.isFinite(bountyAmount) || bountyAmount < 1) {
       showError('Minimum bounty is 1 USDC');
       return;
     }
-    setIsSubmitting(true);
+    if (!address) {
+      showError('Connect a wallet first');
+      return;
+    }
+    if (!config?.usdcAddress || !config?.taskManagerAddress) {
+      showError('Protocol config not loaded yet — refresh and try again.');
+      return;
+    }
+    if (isPendingQueueFull()) {
+      showError('Pending recovery queue is full. Reload the page so previous missions can re-link, then try again.');
+      return;
+    }
 
-    // Create the mission on the backend via the missions context.
-    // Errors are surfaced as a toast by the context; we keep the UI flow.
+    setIsSubmitting(true);
+    setProgress('preflight');
+    setProgressTxHash(null);
+    setProgressMessage('Running pre-flight checks…');
+
+    const formSnapshot = {
+      title: missionTitle || 'Untitled Mission',
+      description: missionDescription || 'No description provided',
+      category: (selectedCategory || 'OTHER').toUpperCase().replace(/[\s&]+/g, '_'),
+      reward: bountyAmount,
+      posterType: posterType.toUpperCase(),
+      companyName: posterType === 'enterprise' ? companyName : undefined,
+    };
+
+    let onChainId: number | null = null;
+    let txHash: Hash | null = null;
+
     try {
+      // Pre-flight #1: SIWE
+      if (!getAuthToken()) {
+        await signInWithEthereum(address, signMessage);
+      }
+
+      // Pre-flight #2: USDC balance
+      const usdcBalance = await readUsdcBalance(config.usdcAddress, address as Address);
+      if (usdcBalance < bountyAmount) {
+        throw new Error(`Insufficient USDC. You have ${usdcBalance.toFixed(2)}, need ${bountyAmount.toFixed(2)}.`);
+      }
+
+      // Pre-flight #3: ETH gas
+      const ethBal = await readEthBalance(address as Address);
+      if (ethBal < 1_000_000_000_000_000n /* 0.001 ETH */) {
+        throw new Error('Insufficient ETH for gas. Top up the wallet with a small amount of ETH on Base.');
+      }
+
+      // Pre-flight #4: workWindow
+      const requestedSec = 60 * 60; // 1h default; backend already enforces its own min/max
+      const contractMin = await readMinWorkWindow(config.taskManagerAddress);
+      const workWindowSec = Math.max(contractMin, requestedSec);
+
+      // On-chain: approve (if needed) + createTask
+      const result = await createMissionOnChain({
+        client: address as Address,
+        usdc: config.usdcAddress,
+        taskManager: config.taskManagerAddress,
+        rewardUsdc: bountyAmount,
+        workWindowSec,
+        writeContract: (params) => writeContract({
+          address: params.address,
+          abi: params.abi as never,
+          functionName: params.functionName,
+          args: params.args as never,
+        }),
+        onProgress: (step, hash) => {
+          if (step === 'approving') {
+            setProgress('approving');
+            setProgressMessage('Approving USDC spend…');
+          } else if (step === 'locking') {
+            setProgress('locking');
+            setProgressMessage('Locking bounty on Base…');
+          } else if (step === 'done' && hash) {
+            setProgressTxHash(hash);
+          }
+        },
+      });
+
+      onChainId = Number(result.taskId);
+      txHash = result.txHash;
+      setProgressTxHash(txHash);
+
+      // Push to localStorage queue before POST so an orphan can be recovered.
+      pushPendingMission({ onChainId, txHash, form: formSnapshot });
+
+      // POST to backend.
+      setProgress('saving');
+      setProgressMessage('Saving mission…');
       await addMission({
-        title: missionTitle || 'Untitled Mission',
-        description: missionDescription || 'No description provided',
+        title: formSnapshot.title,
+        description: formSnapshot.description,
         category: selectedCategory || 'Other',
         bountyAmount,
         posterType,
-        companyName: posterType === 'enterprise' ? companyName : undefined,
-      }, contextFiles);
-    } catch {
-      /* toast already shown by the context */
-    }
+        companyName: formSnapshot.companyName,
+      }, contextFiles, onChainId);
 
-    // Mission posting confirmation / blockchain locking animation
-    setTimeout(() => {
-      setIsSubmitting(false);
+      // POST success → drop from queue.
+      removePendingMission(onChainId);
+
+      setProgress('success');
       setIsSuccess(true);
-      
-      // Navigate to overview (Mission Control) after 1.5 seconds to see the posted mission
-      setTimeout(() => {
-        navigate('/enterprise');
-      }, 1500);
-    }, 3000); // 3 seconds for the locking animation
+      setTimeout(() => navigate('/enterprise'), 1500);
+    } catch (err: any) {
+      const decoded = decodeOnchainError(err);
+      setProgress('error');
+      setProgressMessage(decoded.copy);
+      showError(decoded.copy);
+      if (onChainId != null && txHash != null) {
+        // The on-chain mission is real; the recovery queue keeps it for retry.
+        showError(`On-chain task #${onChainId} created, will retry the link on next page load.`);
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -458,17 +565,34 @@ export function PostMission() {
             
             {/* Button text */}
             <span className="relative z-10">
-              {isSubmitting 
-                ? 'Locking Funds in Escrow...' 
-                : isSuccess 
-                  ? '🎉 Mission Posted Successfully!'
-                  : 'Lock Bounty & Post Mission'}
+              {progress === 'approving' && 'Approving USDC…'}
+              {progress === 'locking' && 'Locking bounty on Base…'}
+              {progress === 'saving' && 'Saving mission…'}
+              {progress === 'preflight' && 'Checking balances…'}
+              {progress === 'success' && '🎉 Mission posted on-chain'}
+              {progress === 'error' && 'Try again'}
+              {progress === 'idle' && 'Lock Bounty & Post Mission'}
             </span>
           </motion.button>
 
-          <p className="text-xs text-center text-gray-500 mt-4">
-            Funds will be held in escrow until mission completion is verified
-          </p>
+          {(progress === 'approving' || progress === 'locking' || progress === 'saving' || progress === 'preflight') && (
+            <p className="text-xs text-center text-gray-500 mt-4">{progressMessage}</p>
+          )}
+          {progress === 'success' && explorerTxUrl && (
+            <p className="text-xs text-center text-gray-500 mt-4">
+              <a href={explorerTxUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-indigo-600 hover:text-indigo-700 font-semibold">
+                View escrow transaction <ExternalLink className="h-3 w-3" />
+              </a>
+            </p>
+          )}
+          {progress === 'error' && (
+            <p className="text-xs text-center text-red-600 mt-4">{progressMessage}</p>
+          )}
+          {progress === 'idle' && (
+            <p className="text-xs text-center text-gray-500 mt-4">
+              Funds will be held in escrow until mission completion is verified.
+            </p>
+          )}
         </div>
       </div>
     </main>

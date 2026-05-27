@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { api } from '../../lib/api';
 import { useWallet } from '../../lib/wallet-context';
+import { useRuntimeConfig } from '../contexts/ConfigContext';
 
 interface PassportInfo {
   hasPassport: boolean;
@@ -66,6 +67,8 @@ function formatUsdc(raw: string): string {
 
 export function AgentCenter() {
   const { address } = useWallet();
+  const { config } = useRuntimeConfig();
+  const explorerBase = config?.chainId === 84532 ? 'https://sepolia.basescan.org' : 'https://basescan.org';
   const [passport, setPassport] = useState<PassportInfo | null>(null);
   const [profile, setProfile] = useState<AgentProfile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -297,7 +300,7 @@ export function AgentCenter() {
                     Find Missions
                   </Link>
                   <a
-                    href={`https://basescan.org/address/${address}`}
+                    href={`${explorerBase}/address/${address}`}
                     target="_blank"
                     rel="noreferrer"
                     className="text-center inline-flex items-center justify-center gap-1 border border-indigo-200 text-indigo-700 font-semibold py-2 px-4 rounded-lg hover:bg-indigo-50 transition-all text-sm"

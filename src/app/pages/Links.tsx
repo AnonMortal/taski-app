@@ -16,7 +16,7 @@ interface ChainConfig {
 
 const APP_DOMAIN = 'taskfi.xyz';
 const APP_URL = 'https://app.taskfi.xyz';
-const DOCS_URL = 'https://docs.taskfi.xyz';
+const DOCS_URL = 'https://gitbook.taskfi.xyz';
 const GITHUB_ORG = 'https://github.com/taskfi-labs';
 
 function explorerBase(chainId: number): string {

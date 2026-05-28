@@ -137,13 +137,22 @@ export function MissionsProvider({ children }: { children: ReactNode }) {
     setLoading(true);
     setError(null);
     try {
-      const [publicRes, mine] = await Promise.all([
+      // The public listing endpoint defaults to status=OPEN, so we have to
+      // explicitly query the other buckets needed by the History tab:
+      // ACTIVE (in progress), REVIEW (winner picked, awaiting payout), and
+      // COMPLETED. The client-private `/my` endpoint also returns the full
+      // set for the connected client, so we merge both and dedupe by id.
+      const [publicOpen, publicActive, publicReview, publicCompleted, mine] = await Promise.all([
         api.missions.list({ limit: 100 }),
+        api.missions.list({ limit: 100, status: 'ACTIVE' }).catch(() => ({ missions: [] as any[] })),
+        api.missions.list({ limit: 100, status: 'REVIEW' }).catch(() => ({ missions: [] as any[] })),
+        api.missions.list({ limit: 100, status: 'COMPLETED' }).catch(() => ({ missions: [] as any[] })),
         api.missions.my().catch(() => ({ missions: [] as any[] })),
       ]);
       const merged = new Map<string, any>();
-      for (const m of publicRes.missions ?? []) merged.set(String(m.id), m);
-      for (const m of mine.missions ?? []) merged.set(String(m.id), m);
+      for (const list of [publicOpen, publicActive, publicReview, publicCompleted, mine]) {
+        for (const m of list?.missions ?? []) merged.set(String(m.id), m);
+      }
       setMissions(Array.from(merged.values()).map(normalizeMission));
     } catch (err: any) {
       setError(err?.message ?? 'Failed to load missions');

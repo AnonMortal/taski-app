@@ -41,25 +41,34 @@ export function Marketplace() {
     staked: agent.currentStake,
   }));
 
-  // Completed missions = those returned by the backend with status=completed.
-  // The rating/review/winning agent are not exposed on the public listing
-  // endpoint, so we only surface the fields available there.
+  // History = COMPLETED missions + missions in REVIEW where the jury has
+  // already picked a winner (signaled by winnerAddress being set). Surfacing
+  // the latter lets the client see who won immediately rather than waiting
+  // for the review window to elapse and the on-chain forceComplete to fire.
   const completedMissions = userMissions
-    .filter((m) => m.status === 'completed')
+    .filter((m) => m.status === 'completed' || (m.status === 'in-progress' && m.winnerAddress != null))
     .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
-    .map((m) => ({
-      id: m.id,
-      title: m.title,
-      bounty: m.bountyAmount,
-      completedDate: m.timestamp.toLocaleDateString(undefined, {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric',
-      }),
-      client: m.posterType === 'enterprise' ? m.companyName || 'Enterprise' : 'Individual',
-      juryVerdict: 'Approved' as const,
-      skills: [m.category],
-    }));
+    .map((m) => {
+      const isPendingPayout = m.status !== 'completed';
+      const winnerShort = m.winnerAddress
+        ? `${m.winnerAddress.slice(0, 6)}…${m.winnerAddress.slice(-4)}`
+        : null;
+      return {
+        id: m.id,
+        title: m.title,
+        bounty: m.bountyAmount,
+        completedDate: m.timestamp.toLocaleDateString(undefined, {
+          month: 'short',
+          day: 'numeric',
+          year: 'numeric',
+        }),
+        client: m.posterType === 'enterprise' ? m.companyName || 'Enterprise' : 'Individual',
+        juryVerdict: isPendingPayout ? ('Pending payout' as const) : ('Approved' as const),
+        skills: [m.category],
+        isPendingPayout,
+        winnerShort,
+      };
+    });
 
   return (
     <main className="flex-1 overflow-y-auto p-4 md:p-8">
@@ -324,10 +333,17 @@ export function Marketplace() {
                 className="rounded-xl border border-indigo-200/40 bg-white/80 backdrop-blur-md p-6 shadow-lg hover:shadow-xl transition-all hover:scale-[1.02]"
               >
                 <div className="mb-4 flex items-center justify-between">
-                  <span className="px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700 flex items-center gap-1">
-                    <CheckCircle className="h-3.5 w-3.5" />
-                    Completed
-                  </span>
+                  {mission.isPendingPayout ? (
+                    <span className="px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 flex items-center gap-1">
+                      <CheckCircle className="h-3.5 w-3.5" />
+                      Pending payout
+                    </span>
+                  ) : (
+                    <span className="px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700 flex items-center gap-1">
+                      <CheckCircle className="h-3.5 w-3.5" />
+                      Completed
+                    </span>
+                  )}
                   <span className="text-xs text-gray-500">{mission.completedDate}</span>
                 </div>
 
@@ -337,6 +353,12 @@ export function Marketplace() {
                     <Bot className="h-4 w-4 text-indigo-600" />
                     Posted by <span className="font-semibold text-indigo-700">{mission.client}</span>
                   </div>
+                  {mission.winnerShort && (
+                    <div className="mt-2 flex items-center gap-2 text-sm text-gray-600">
+                      <CheckCircle className="h-4 w-4 text-emerald-600" />
+                      Winner <span className="font-mono font-semibold text-emerald-700">{mission.winnerShort}</span>
+                    </div>
+                  )}
                 </div>
 
                 <div className="mb-4 grid grid-cols-2 gap-2">

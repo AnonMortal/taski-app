@@ -93,6 +93,13 @@ export async function createMissionOnChain(p: CreateMissionParams): Promise<Crea
     throw new Error(`USDC approve reverted on-chain (tx ${approveHash}). Allowance unchanged — retry the post.`);
   }
 
+  // Hold for the RPC indexer to propagate the new allowance across all nodes.
+  // Without this, a load-balanced QuickNode endpoint can route the next read
+  // (and the subsequent createTask broadcast) to a node that still sees the
+  // pre-approve state, leading to misleading "exceeds allowance" reverts or
+  // -32602 invalid-params errors from a half-synced sequencer.
+  await new Promise((resolve) => setTimeout(resolve, 3000));
+
   // Defensive re-read: confirm the new allowance is visible BEFORE broadcasting
   // createTask. If the RPC indexer is behind, surface that clearly instead of
   // letting createTask revert with a misleading "exceeds allowance".

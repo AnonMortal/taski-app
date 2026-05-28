@@ -125,8 +125,11 @@ export function PostMission() {
 
       // Pre-flight #3: ETH gas
       const ethBal = await readEthBalance(address as Address);
-      if (ethBal < 1_000_000_000_000_000n /* 0.001 ETH */) {
-        throw new Error('Insufficient ETH for gas. Top up the wallet with a small amount of ETH on Base.');
+      if (ethBal < 500_000_000_000_000n /* 0.0005 ETH — covers ~6 approve+createTask cycles on Base */) {
+        const ethHuman = (Number(ethBal) / 1e18).toFixed(6);
+        throw new Error(
+          `Not enough ETH in this wallet (${ethHuman} ETH). Send at least 0.001 ETH on Base to ${address} to cover gas.`,
+        );
       }
 
       // Pre-flight #4: workWindow

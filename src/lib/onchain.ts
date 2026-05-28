@@ -1,6 +1,7 @@
 import { parseUnits, decodeEventLog, type Address, type Hash } from 'viem';
 import { getPublicClient, USDC_DECIMALS } from './chain';
 import { ERC20_ABI, TASK_MANAGER_ABI } from './abis';
+import { dashLogger } from './dash-logger';
 
 const RECEIPT_POLL_INTERVAL_MS = 1500;
 const RECEIPT_TIMEOUT_MS = 60_000;
@@ -43,9 +44,9 @@ export async function createMissionOnChain(p: CreateMissionParams): Promise<Crea
 
   const rewardWei = parseUnits(String(p.rewardUsdc), USDC_DECIMALS);
 
-  // Log all on-chain params so a failure is easy to diagnose from DevTools.
-  // eslint-disable-next-line no-console
-  console.info('[createMissionOnChain] params:', {
+  // Log all on-chain params so a failure is easy to diagnose from DevTools
+  // and from the backend's pm2 stream (via dashLogger).
+  dashLogger.info('createMissionOnChain.params', {
     client: p.client,
     usdc: p.usdc,
     taskManager: p.taskManager,
@@ -61,10 +62,11 @@ export async function createMissionOnChain(p: CreateMissionParams): Promise<Crea
     functionName: 'allowance',
     args: [p.client, p.taskManager],
   })) as bigint;
-  // eslint-disable-next-line no-console
-  console.info(
-    `[createMissionOnChain] current allowance = ${allowance} wei, need ${rewardWei}. Approving anyway.`,
-  );
+  dashLogger.info('createMissionOnChain.allowance.pre', {
+    allowance: allowance.toString(),
+    need: rewardWei.toString(),
+    willApproveAnyway: true,
+  });
 
   // 2. ALWAYS approve before createTask. The "skip when allowance ≥ reward"
   //    optimization was dropped because RPC caching / stale reads can return
@@ -78,17 +80,17 @@ export async function createMissionOnChain(p: CreateMissionParams): Promise<Crea
     functionName: 'approve',
     args: [p.taskManager, rewardWei],
   });
-  // eslint-disable-next-line no-console
-  console.info(`[createMissionOnChain] approve tx broadcast: ${approveHash}`);
+  dashLogger.info('createMissionOnChain.approve.broadcast', { txHash: approveHash });
   const approveReceipt = await pub.waitForTransactionReceipt({
     hash: approveHash,
     pollingInterval: RECEIPT_POLL_INTERVAL_MS,
     timeout: RECEIPT_TIMEOUT_MS,
   });
-  // eslint-disable-next-line no-console
-  console.info(
-    `[createMissionOnChain] approve receipt status = ${approveReceipt.status}, block = ${approveReceipt.blockNumber}`,
-  );
+  dashLogger.info('createMissionOnChain.approve.receipt', {
+    status: approveReceipt.status,
+    blockNumber: approveReceipt.blockNumber.toString(),
+    gasUsed: approveReceipt.gasUsed.toString(),
+  });
   if (approveReceipt.status !== 'success') {
     throw new Error(`USDC approve reverted on-chain (tx ${approveHash}). Allowance unchanged — retry the post.`);
   }
@@ -109,8 +111,10 @@ export async function createMissionOnChain(p: CreateMissionParams): Promise<Crea
     functionName: 'allowance',
     args: [p.client, p.taskManager],
   })) as bigint;
-  // eslint-disable-next-line no-console
-  console.info(`[createMissionOnChain] post-approve allowance = ${postApproveAllowance} wei`);
+  dashLogger.info('createMissionOnChain.allowance.post', {
+    allowance: postApproveAllowance.toString(),
+    need: rewardWei.toString(),
+  });
   if (postApproveAllowance < rewardWei) {
     throw new Error(
       `Allowance still ${postApproveAllowance} after approve (expected ≥ ${rewardWei}). The RPC may be lagging — wait a few seconds and retry.`,
@@ -119,16 +123,40 @@ export async function createMissionOnChain(p: CreateMissionParams): Promise<Crea
 
   // 2. createTask.
   p.onProgress?.('locking');
-  const createHash = await p.writeContract({
-    address: p.taskManager,
-    abi: TASK_MANAGER_ABI,
-    functionName: 'createTask',
-    args: [rewardWei, BigInt(p.workWindowSec)],
+  dashLogger.info('createMissionOnChain.createTask.broadcasting', {
+    taskManager: p.taskManager,
+    rewardWei: rewardWei.toString(),
+    workWindowSec: p.workWindowSec,
   });
+  let createHash: Hash;
+  try {
+    createHash = await p.writeContract({
+      address: p.taskManager,
+      abi: TASK_MANAGER_ABI,
+      functionName: 'createTask',
+      args: [rewardWei, BigInt(p.workWindowSec)],
+    });
+  } catch (err: unknown) {
+    const e = err as { shortMessage?: string; message?: string; details?: string; name?: string };
+    dashLogger.error('createMissionOnChain.createTask.broadcast.failed', {
+      name: e.name,
+      shortMessage: e.shortMessage,
+      details: e.details,
+      message: e.message?.slice(0, 1000),
+    });
+    throw err;
+  }
+  dashLogger.info('createMissionOnChain.createTask.broadcast', { txHash: createHash });
+
   const receipt = await pub.waitForTransactionReceipt({
     hash: createHash,
     pollingInterval: RECEIPT_POLL_INTERVAL_MS,
     timeout: RECEIPT_TIMEOUT_MS,
+  });
+  dashLogger.info('createMissionOnChain.createTask.receipt', {
+    status: receipt.status,
+    blockNumber: receipt.blockNumber.toString(),
+    gasUsed: receipt.gasUsed.toString(),
   });
   // Same guard for createTask: if it reverted, the TaskCreated event lookup
   // below would fail with a vague "event not found" message instead of the

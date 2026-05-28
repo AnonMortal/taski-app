@@ -43,33 +43,71 @@ export async function createMissionOnChain(p: CreateMissionParams): Promise<Crea
 
   const rewardWei = parseUnits(String(p.rewardUsdc), USDC_DECIMALS);
 
-  // 1. Allowance check — skip approve if already sufficient.
+  // Log all on-chain params so a failure is easy to diagnose from DevTools.
+  // eslint-disable-next-line no-console
+  console.info('[createMissionOnChain] params:', {
+    client: p.client,
+    usdc: p.usdc,
+    taskManager: p.taskManager,
+    rewardUsdc: p.rewardUsdc,
+    rewardWei: rewardWei.toString(),
+    workWindowSec: p.workWindowSec,
+  });
+
+  // 1. Read current allowance for visibility (we always approve, see below).
   const allowance = (await pub.readContract({
     address: p.usdc,
     abi: ERC20_ABI,
     functionName: 'allowance',
     args: [p.client, p.taskManager],
   })) as bigint;
+  // eslint-disable-next-line no-console
+  console.info(
+    `[createMissionOnChain] current allowance = ${allowance} wei, need ${rewardWei}. Approving anyway.`,
+  );
 
-  if (allowance < rewardWei) {
-    p.onProgress?.('approving');
-    const approveHash = await p.writeContract({
-      address: p.usdc,
-      abi: ERC20_ABI,
-      functionName: 'approve',
-      args: [p.taskManager, rewardWei],
-    });
-    const approveReceipt = await pub.waitForTransactionReceipt({
-      hash: approveHash,
-      pollingInterval: RECEIPT_POLL_INTERVAL_MS,
-      timeout: RECEIPT_TIMEOUT_MS,
-    });
-    // Guard: a reverted approve mines as `status: 'reverted'` but the helper
-    // would silently continue with stale allowance, producing the misleading
-    // "ERC20: transfer amount exceeds allowance" error on the next step.
-    if (approveReceipt.status !== 'success') {
-      throw new Error(`USDC approve reverted on-chain (tx ${approveHash}). Allowance unchanged — retry the post.`);
-    }
+  // 2. ALWAYS approve before createTask. The "skip when allowance ≥ reward"
+  //    optimization was dropped because RPC caching / stale reads can return
+  //    a misleading non-zero value, leading createTask to revert with
+  //    "ERC20: transfer amount exceeds allowance". On Base the extra approve
+  //    costs ~$0.005 — well worth eliminating that failure mode.
+  p.onProgress?.('approving');
+  const approveHash = await p.writeContract({
+    address: p.usdc,
+    abi: ERC20_ABI,
+    functionName: 'approve',
+    args: [p.taskManager, rewardWei],
+  });
+  // eslint-disable-next-line no-console
+  console.info(`[createMissionOnChain] approve tx broadcast: ${approveHash}`);
+  const approveReceipt = await pub.waitForTransactionReceipt({
+    hash: approveHash,
+    pollingInterval: RECEIPT_POLL_INTERVAL_MS,
+    timeout: RECEIPT_TIMEOUT_MS,
+  });
+  // eslint-disable-next-line no-console
+  console.info(
+    `[createMissionOnChain] approve receipt status = ${approveReceipt.status}, block = ${approveReceipt.blockNumber}`,
+  );
+  if (approveReceipt.status !== 'success') {
+    throw new Error(`USDC approve reverted on-chain (tx ${approveHash}). Allowance unchanged — retry the post.`);
+  }
+
+  // Defensive re-read: confirm the new allowance is visible BEFORE broadcasting
+  // createTask. If the RPC indexer is behind, surface that clearly instead of
+  // letting createTask revert with a misleading "exceeds allowance".
+  const postApproveAllowance = (await pub.readContract({
+    address: p.usdc,
+    abi: ERC20_ABI,
+    functionName: 'allowance',
+    args: [p.client, p.taskManager],
+  })) as bigint;
+  // eslint-disable-next-line no-console
+  console.info(`[createMissionOnChain] post-approve allowance = ${postApproveAllowance} wei`);
+  if (postApproveAllowance < rewardWei) {
+    throw new Error(
+      `Allowance still ${postApproveAllowance} after approve (expected ≥ ${rewardWei}). The RPC may be lagging — wait a few seconds and retry.`,
+    );
   }
 
   // 2. createTask.

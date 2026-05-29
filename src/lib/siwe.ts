@@ -1,6 +1,11 @@
 import { api, setAuthToken } from "./api";
+import { chain } from "./chain";
 
-const BASE_CHAIN_ID = Number(import.meta.env.VITE_CHAIN_ID || "8453");
+// Single source of truth for the chain id (chain.ts resolves VITE_CHAIN_ID with
+// a Base Sepolia default). Avoids the previous mismatch where siwe.ts defaulted
+// to mainnet (8453) while chain.ts defaulted to Sepolia (84532), which made the
+// backend reject the SIWE message with "Invalid chain ID".
+const BASE_CHAIN_ID = chain.id;
 const DOMAIN = window.location.host;
 const ORIGIN = window.location.origin;
 

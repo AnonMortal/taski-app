@@ -43,7 +43,11 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 
   // Don't set Content-Type for FormData (browser sets it with boundary)
   // Don't set Content-Type if no body (avoid Fastify empty JSON body error)
-  if (options.body && !(options.body instanceof FormData)) {
+  // Don't set it twice: if the caller already provided one (any case), keep it.
+  // Otherwise fetch merges "content-type" + "Content-Type" into
+  // "application/json, application/json", which Fastify rejects with 415.
+  const hasContentType = Object.keys(headers).some((h) => h.toLowerCase() === "content-type");
+  if (options.body && !(options.body instanceof FormData) && !hasContentType) {
     headers["Content-Type"] = "application/json";
   }
 

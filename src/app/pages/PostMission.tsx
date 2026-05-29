@@ -1,5 +1,5 @@
 import { Target, FileText, DollarSign, Shield, Upload, Lock, User, Building2, CheckCircle, X, ExternalLink } from 'lucide-react';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { motion } from 'motion/react';
 import { useMissions } from '../contexts/MissionsContext';
 import { useNavigate } from 'react-router';
@@ -12,9 +12,11 @@ import { pushPendingMission, isPendingQueueFull, removePendingMission } from '..
 import { signInWithEthereum } from '../../lib/siwe';
 import { getAuthToken } from '../../lib/api';
 import { chainExplorerUrl } from '../../lib/chain';
+import { ONRAMP_ENABLED, GAS_GATE_WEI } from '../../lib/onramp';
+import { OnrampModal } from '../components/taskfi/OnrampModal';
 import type { Address, Hash } from 'viem';
 
-type ProgressStep = 'idle' | 'preflight' | 'approving' | 'locking' | 'saving' | 'success' | 'error';
+type ProgressStep = 'idle' | 'preflight' | 'funding' | 'approving' | 'locking' | 'saving' | 'success' | 'error';
 
 export function PostMission() {
   const [bountyAmount, setBountyAmount] = useState(1000);
@@ -55,6 +57,32 @@ export function PostMission() {
   const [progress, setProgress] = useState<ProgressStep>('idle');
   const [progressTxHash, setProgressTxHash] = useState<Hash | null>(null);
   const [progressMessage, setProgressMessage] = useState<string>('');
+
+  // Fiat-onramp funding modal. handleSubmit awaits openOnrampAndWait(); the
+  // modal resolves the stored promise once funds (USDC + gas) have landed.
+  const [onrampOpen, setOnrampOpen] = useState(false);
+  const fundResolveRef = useRef<{ resolve: () => void; reject: (e: Error) => void } | null>(null);
+
+  const ensureAuth = async () => {
+    if (!getAuthToken() && address) {
+      await signInWithEthereum(address, signMessage);
+    }
+  };
+  const openOnrampAndWait = () =>
+    new Promise<void>((resolve, reject) => {
+      fundResolveRef.current = { resolve, reject };
+      setOnrampOpen(true);
+    });
+  const handleOnrampFunded = () => {
+    setOnrampOpen(false);
+    fundResolveRef.current?.resolve();
+    fundResolveRef.current = null;
+  };
+  const handleOnrampClose = () => {
+    setOnrampOpen(false);
+    fundResolveRef.current?.reject(new Error('Card payment cancelled.'));
+    fundResolveRef.current = null;
+  };
 
   const explorerTxUrl = useMemo(() => (progressTxHash ? chainExplorerUrl(progressTxHash) : null), [progressTxHash]);
 
@@ -117,19 +145,28 @@ export function PostMission() {
         await signInWithEthereum(address, signMessage);
       }
 
-      // Pre-flight #2: USDC balance
-      const usdcBalance = await readUsdcBalance(config.usdcAddress, address as Address);
-      if (usdcBalance < bountyAmount) {
-        throw new Error(`Insufficient USDC. You have ${usdcBalance.toFixed(2)}, need ${bountyAmount.toFixed(2)}.`);
-      }
+      // Pre-flight #2 & #3: USDC balance + ETH gas. If the wallet is short and
+      // the fiat onramp is enabled, let the user top up by card, then re-check.
+      let usdcBalance = await readUsdcBalance(config.usdcAddress, address as Address);
+      let ethBal = await readEthBalance(address as Address);
 
-      // Pre-flight #3: ETH gas
-      const ethBal = await readEthBalance(address as Address);
-      if (ethBal < 500_000_000_000_000n /* 0.0005 ETH — covers ~6 approve+createTask cycles on Base */) {
-        const ethHuman = (Number(ethBal) / 1e18).toFixed(6);
-        throw new Error(
-          `Not enough ETH in this wallet (${ethHuman} ETH). Send at least 0.001 ETH on Base to ${address} to cover gas.`,
-        );
+      if (usdcBalance < bountyAmount || ethBal < GAS_GATE_WEI) {
+        if (ONRAMP_ENABLED) {
+          setProgress('funding');
+          setProgressMessage('Waiting for card payment…');
+          await openOnrampAndWait();
+          usdcBalance = await readUsdcBalance(config.usdcAddress, address as Address);
+          ethBal = await readEthBalance(address as Address);
+        }
+        if (usdcBalance < bountyAmount) {
+          throw new Error(`Insufficient USDC. You have ${usdcBalance.toFixed(2)}, need ${bountyAmount.toFixed(2)}.`);
+        }
+        if (ethBal < GAS_GATE_WEI /* 0.0005 ETH — covers ~6 approve+createTask cycles on Base */) {
+          const ethHuman = (Number(ethBal) / 1e18).toFixed(6);
+          throw new Error(
+            `Not enough ETH in this wallet (${ethHuman} ETH). Send at least 0.001 ETH on Base to ${address} to cover gas.`,
+          );
+        }
       }
 
       // Pre-flight #4: workWindow
@@ -568,6 +605,7 @@ export function PostMission() {
             
             {/* Button text */}
             <span className="relative z-10">
+              {progress === 'funding' && 'Waiting for payment…'}
               {progress === 'approving' && 'Approving USDC…'}
               {progress === 'locking' && 'Locking bounty on Base…'}
               {progress === 'saving' && 'Saving mission…'}
@@ -578,7 +616,7 @@ export function PostMission() {
             </span>
           </motion.button>
 
-          {(progress === 'approving' || progress === 'locking' || progress === 'saving' || progress === 'preflight') && (
+          {(progress === 'funding' || progress === 'approving' || progress === 'locking' || progress === 'saving' || progress === 'preflight') && (
             <p className="text-xs text-center text-gray-500 mt-4">{progressMessage}</p>
           )}
           {progress === 'success' && explorerTxUrl && (
@@ -598,6 +636,18 @@ export function PostMission() {
           )}
         </div>
       </div>
+
+      {ONRAMP_ENABLED && (
+        <OnrampModal
+          open={onrampOpen}
+          amountUsdc={bountyAmount}
+          address={address as Address}
+          usdc={config?.usdcAddress ?? null}
+          ensureAuth={ensureAuth}
+          onFunded={handleOnrampFunded}
+          onClose={handleOnrampClose}
+        />
+      )}
     </main>
   );
 }

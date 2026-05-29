@@ -176,4 +176,23 @@ export const api = {
         agentPassportAddress: string | null;
       }>("/api/public/config"),
   },
+
+  onramp: {
+    // Project gas dispenser: tops up the caller's wallet with a little ETH for
+    // gas (and, in dev, test USDC). Idempotent server-side. Requires SIWE auth.
+    gasGrant: (body?: { usdcAmount?: string }) =>
+      request<{ ethGranted: string; usdcGranted: string; ethTxHash?: string; usdcTxHash?: string }>(
+        "/api/onramp/gas-grant",
+        {
+          method: "POST",
+          body: JSON.stringify(body ?? {}),
+          headers: { "content-type": "application/json" },
+        },
+      ),
+    // Coinbase Onramp session token (CDP secrets stay server-side).
+    sessionToken: () =>
+      request<{ token: string; channelId: string | null }>("/api/onramp/session-token", {
+        method: "POST",
+      }),
+  },
 };

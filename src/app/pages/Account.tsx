@@ -1,11 +1,14 @@
-import { User, Wallet, Shield, Bell, Globe, Save, Check, LogOut } from 'lucide-react';
+import { User, Wallet, Shield, Bell, Globe, Save, Check, LogOut, CreditCard } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import type { Address } from 'viem';
 import { useWallet } from '../../lib/wallet-context';
-import { api } from '../../lib/api';
+import { api, getAuthToken } from '../../lib/api';
 import { showSuccess } from '../../lib/toast';
 import { getTokenBalances, formatUsdc as formatUsdcBalance, formatTask } from '../../lib/balances';
 import { getPublicClient } from '../../lib/chain';
+import { signInWithEthereum } from '../../lib/siwe';
+import { ONRAMP_ENABLED } from '../../lib/onramp';
+import { OnrampModal } from '../components/taskfi/OnrampModal';
 import { useRuntimeConfig } from '../contexts/ConfigContext';
 
 interface LocalProfile {
@@ -35,7 +38,7 @@ function formatPendingUsdc(raw: string | null): string {
 }
 
 export function Account() {
-  const { address, lock } = useWallet();
+  const { address, lock, signMessage } = useWallet();
   const { config } = useRuntimeConfig();
   const shortAddress = address
     ? `${address.slice(0, 6)}...${address.slice(-4)}`
@@ -53,6 +56,17 @@ export function Account() {
   });
   const chainReadsEnabled = getPublicClient() !== null;
   const [saved, setSaved] = useState(false);
+
+  // Fiat-onramp "add funds" entry point (decoupled from mission posting).
+  const [onrampOpen, setOnrampOpen] = useState(false);
+  const [topUpAmount, setTopUpAmount] = useState(100);
+  const [balanceNonce, setBalanceNonce] = useState(0);
+
+  const ensureAuth = async () => {
+    if (!getAuthToken() && address) {
+      await signInWithEthereum(address, signMessage);
+    }
+  };
 
   // Load locally-stored profile + notifications per wallet
   useEffect(() => {
@@ -118,7 +132,7 @@ export function Account() {
     return () => {
       cancelled = true;
     };
-  }, [address, chainReadsEnabled, config]);
+  }, [address, chainReadsEnabled, config, balanceNonce]);
 
   function saveProfile() {
     if (!profileKey) return;
@@ -256,6 +270,35 @@ export function Account() {
                 <p className="text-xs text-gray-500 mt-1">In escrow, claim from Staking &amp; Rewards.</p>
               </div>
             </div>
+
+            {/* Top up the wallet with USDC by card (fiat onramp). */}
+            {ONRAMP_ENABLED && (
+              <div className="mt-4 flex flex-col sm:flex-row sm:items-end gap-3">
+                <div>
+                  <label htmlFor="topup-amount" className="block text-xs font-medium text-gray-600 mb-1">
+                    Amount (USDC)
+                  </label>
+                  <input
+                    id="topup-amount"
+                    type="number"
+                    min="1"
+                    step="1"
+                    value={topUpAmount}
+                    onChange={(e) => setTopUpAmount(Number(e.target.value))}
+                    disabled={!address}
+                    className="w-32 px-3 py-2 rounded-lg border border-indigo-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-50 disabled:text-gray-400"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setOnrampOpen(true)}
+                  disabled={!address || topUpAmount < 1}
+                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-gradient-to-r from-[#4B3EEF] to-[#3D32D9] text-white text-sm font-semibold hover:shadow-lg hover:scale-[1.02] transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                >
+                  <CreditCard className="h-4 w-4" /> Add funds (buy USDC)
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -347,6 +390,22 @@ export function Account() {
           </div>
         </div>
       </div>
+
+      {ONRAMP_ENABLED && (
+        <OnrampModal
+          open={onrampOpen}
+          amountUsdc={topUpAmount}
+          address={address as Address}
+          usdc={config?.usdcAddress ?? null}
+          ensureAuth={ensureAuth}
+          onFunded={() => {
+            setOnrampOpen(false);
+            setBalanceNonce((n) => n + 1);
+            showSuccess('Funds added to your wallet');
+          }}
+          onClose={() => setOnrampOpen(false)}
+        />
+      )}
     </main>
   );
 }

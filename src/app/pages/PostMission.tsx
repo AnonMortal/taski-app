@@ -1,4 +1,4 @@
-import { Target, FileText, DollarSign, Shield, Upload, Lock, User, Building2, CheckCircle, X, ExternalLink } from 'lucide-react';
+import { Target, FileText, DollarSign, Shield, Upload, Lock, User, Building2, CheckCircle, X, ExternalLink, CreditCard } from 'lucide-react';
 import { useState, useMemo, useRef } from 'react';
 import { motion } from 'motion/react';
 import { useMissions } from '../contexts/MissionsContext';
@@ -104,7 +104,10 @@ export function PostMission() {
   const buybackShare = bountyAmount * 0.2;
   const rewardPoolShare = bountyAmount * 0.1;
 
-  const handleSubmit = async () => {
+  // forceCard=true → always open the card onramp first (web2 "pay by card" path),
+  // even if the wallet already holds USDC. false → use existing wallet funds and
+  // only fall back to the card if short.
+  const handleSubmit = async (forceCard = false) => {
     if (!Number.isFinite(bountyAmount) || bountyAmount < 1) {
       showError('Minimum bounty is 1 USDC');
       return;
@@ -150,8 +153,8 @@ export function PostMission() {
       let usdcBalance = await readUsdcBalance(config.usdcAddress, address as Address);
       let ethBal = await readEthBalance(address as Address);
 
-      if (usdcBalance < bountyAmount || ethBal < GAS_GATE_WEI) {
-        if (ONRAMP_ENABLED) {
+      if (forceCard || usdcBalance < bountyAmount || ethBal < GAS_GATE_WEI) {
+        if (ONRAMP_ENABLED && (forceCard || usdcBalance < bountyAmount || ethBal < GAS_GATE_WEI)) {
           setProgress('funding');
           setProgressMessage('Waiting for card payment…');
           await openOnrampAndWait();
@@ -557,7 +560,7 @@ export function PostMission() {
                 ? 'bg-gradient-to-r from-indigo-600 to-purple-600'
                 : 'bg-gradient-to-r from-[#4B3EEF] to-[#3D32D9] hover:shadow-xl hover:scale-[1.02]'
             } text-white transition-all duration-300`}
-            onClick={handleSubmit}
+            onClick={() => handleSubmit(ONRAMP_ENABLED)}
             disabled={isSubmitting || bountyAmount < 1}
             whileTap={!isSubmitting && bountyAmount >= 1 ? { scale: 0.98 } : {}}
           >
@@ -599,10 +602,12 @@ export function PostMission() {
               >
                 <CheckCircle className="h-5 w-5" />
               </motion.div>
+            ) : ONRAMP_ENABLED ? (
+              <CreditCard className="h-5 w-5 relative z-10" />
             ) : (
               <Lock className="h-5 w-5 relative z-10" />
             )}
-            
+
             {/* Button text */}
             <span className="relative z-10">
               {progress === 'funding' && 'Waiting for payment…'}
@@ -612,9 +617,21 @@ export function PostMission() {
               {progress === 'preflight' && 'Checking balances…'}
               {progress === 'success' && '🎉 Mission posted on-chain'}
               {progress === 'error' && 'Try again'}
-              {progress === 'idle' && 'Lock Bounty & Post Mission'}
+              {progress === 'idle' && (ONRAMP_ENABLED ? 'Pay by card & post mission' : 'Lock Bounty & Post Mission')}
             </span>
           </motion.button>
+
+          {/* Secondary path for users who already hold USDC (skip the card). */}
+          {ONRAMP_ENABLED && progress === 'idle' && (
+            <button
+              type="button"
+              onClick={() => handleSubmit(false)}
+              disabled={isSubmitting || bountyAmount < 1}
+              className="mt-3 w-full text-sm text-gray-500 hover:text-indigo-600 transition-colors disabled:opacity-50"
+            >
+              I already have USDC — pay from my wallet
+            </button>
+          )}
 
           {(progress === 'funding' || progress === 'approving' || progress === 'locking' || progress === 'saving' || progress === 'preflight') && (
             <p className="text-xs text-center text-gray-500 mt-4">{progressMessage}</p>

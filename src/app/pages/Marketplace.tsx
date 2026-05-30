@@ -1,10 +1,12 @@
 import { Search, DollarSign, Target, Bot, Clock, Zap, CheckCircle, User, Building2, Star } from 'lucide-react';
 import { useState } from 'react';
 import { Link } from 'react-router';
+import { useTranslation } from 'react-i18next';
 import { useMissions } from '../contexts/MissionsContext';
 import { useAgents } from '../contexts/AgentsContext';
 
 export function Marketplace() {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<'missions' | 'agents' | 'history'>('missions');
   const { missions: userMissions, loading: missionsLoading, error: missionsError } = useMissions();
   const { agents: rawAgents, loading: agentsLoading, error: agentsError } = useAgents();
@@ -79,8 +81,8 @@ export function Marketplace() {
             <Search className="h-6 w-6 text-white" />
           </div>
           <div>
-            <h2 className="text-2xl md:text-3xl font-bold text-[#1A1B25]">Marketplace</h2>
-            <p className="text-sm text-gray-600">Discover missions and connect with AI agents</p>
+            <h2 className="text-2xl md:text-3xl font-bold text-[#1A1B25]">{t('Marketplace')}</h2>
+            <p className="text-sm text-gray-600">{t('Discover missions and connect with AI agents')}</p>
           </div>
         </div>
 
@@ -89,7 +91,7 @@ export function Marketplace() {
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
           <input
             type="text"
-            placeholder="Search missions, agents, or skills..."
+            placeholder={t('Search missions, agents, or skills...')}
             className="w-full pl-12 pr-4 py-3 rounded-xl border border-indigo-200 bg-white/80 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all shadow-sm"
           />
         </div>
@@ -107,7 +109,7 @@ export function Marketplace() {
             }`}
           >
             <Target className="h-4 w-4" />
-            Active Missions
+            {t('Active Missions')}
           </button>
           <button
             onClick={() => setActiveTab('agents')}
@@ -118,7 +120,7 @@ export function Marketplace() {
             }`}
           >
             <Bot className="h-4 w-4" />
-            Available Agents
+            {t('Available Agents')}
           </button>
           <button
             onClick={() => setActiveTab('history')}
@@ -129,18 +131,18 @@ export function Marketplace() {
             }`}
           >
             <CheckCircle className="h-4 w-4" />
-            Mission History
+            {t('Mission History')}
           </button>
         </div>
       </div>
 
       {/* Content Area */}
       {activeTab === 'missions' && missionsLoading && allMissions.length === 0 && (
-        <p className="text-sm text-gray-400 py-12 text-center">Loading missions…</p>
+        <p className="text-sm text-gray-400 py-12 text-center">{t('Loading missions…')}</p>
       )}
       {activeTab === 'missions' && !missionsLoading && allMissions.length === 0 && (
         <p className="text-sm text-gray-400 py-12 text-center">
-          {missionsError ? 'Unable to load missions right now.' : 'No missions available yet.'}
+          {missionsError ? t('Unable to load missions right now.') : t('No missions available yet.')}
         </p>
       )}
       {activeTab === 'missions' && allMissions.length > 0 && (
@@ -158,12 +160,12 @@ export function Marketplace() {
                   {mission.postedBy === 'Individual' ? (
                     <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-100 text-blue-700 text-xs font-semibold">
                       <User className="h-3 w-3" />
-                      Individual
+                      {t('Individual')}
                     </span>
                   ) : (
                     <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-purple-100 text-purple-700 text-xs font-semibold">
                       <Building2 className="h-3 w-3" />
-                      Enterprise
+                      {t('Enterprise')}
                     </span>
                   )}
                 </div>
@@ -174,14 +176,14 @@ export function Marketplace() {
               <div className="mb-4 flex items-center gap-2 rounded-lg bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 px-3 py-2">
                 <DollarSign className="h-5 w-5 text-green-600" />
                 <div>
-                  <p className="text-xs text-gray-600">Total Bounty</p>
+                  <p className="text-xs text-gray-600">{t('Total Bounty')}</p>
                   <p className="text-lg font-bold text-green-700">${mission.bounty} USDC</p>
                 </div>
               </div>
 
               {/* Skills Required */}
               <div className="mb-4">
-                <p className="text-xs font-semibold text-gray-500 mb-2">Required Skills</p>
+                <p className="text-xs font-semibold text-gray-500 mb-2">{t('Required Skills')}</p>
                 <div className="flex flex-wrap gap-1.5">
                   {mission.skills.map((skill) => (
                     <span
@@ -198,7 +200,7 @@ export function Marketplace() {
               <div className="mb-4 flex items-center justify-between text-xs text-gray-500">
                 <div className="flex items-center gap-1">
                   <Clock className="h-3.5 w-3.5" />
-                  <span>{mission.deadline}</span>
+                  <span>{t(mission.deadline)}</span>
                 </div>
                 {/* Company/Poster Name */}
                 {mission.postedBy !== 'Individual' && (
@@ -214,11 +216,11 @@ export function Marketplace() {
                   to={`/apply-mission/${mission.id}`}
                   className="block w-full text-center bg-gradient-to-r from-[#4B3EEF] to-[#3D32D9] text-white font-bold py-3 px-4 rounded-lg shadow-md hover:shadow-lg hover:scale-[1.02] transition-all duration-300"
                 >
-                  Apply Now
+                  {t('Apply Now')}
                 </Link>
               ) : (
                 <div className="block w-full text-center bg-gray-100 text-gray-500 font-semibold py-3 px-4 rounded-lg">
-                  Acceptance closed
+                  {t('Acceptance closed')}
                 </div>
               )}
             </div>
@@ -227,11 +229,11 @@ export function Marketplace() {
       )}
 
       {activeTab === 'agents' && agentsLoading && agents.length === 0 && (
-        <p className="text-sm text-gray-400 py-12 text-center">Loading agents…</p>
+        <p className="text-sm text-gray-400 py-12 text-center">{t('Loading agents…')}</p>
       )}
       {activeTab === 'agents' && !agentsLoading && agents.length === 0 && (
         <p className="text-sm text-gray-400 py-12 text-center">
-          {agentsError ? 'Unable to load agents right now.' : 'No agents registered yet.'}
+          {agentsError ? t('Unable to load agents right now.') : t('No agents registered yet.')}
         </p>
       )}
       {activeTab === 'agents' && agents.length > 0 && (
@@ -267,7 +269,7 @@ export function Marketplace() {
               {/* Reputation Score */}
               <div className="mb-4 rounded-lg bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-200 p-3">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-semibold text-gray-600">Reputation Score</span>
+                  <span className="text-xs font-semibold text-gray-600">{t('Reputation Score')}</span>
                   <div className="flex items-center gap-1">
                     <Star className="h-4 w-4 fill-amber-500 text-amber-500" />
                     <span className="text-2xl font-bold text-amber-600">{agent.reputation}</span>
@@ -286,11 +288,11 @@ export function Marketplace() {
               {/* Stats Grid */}
               <div className="mb-4 grid grid-cols-2 gap-3">
                 <div className="rounded-lg bg-indigo-50/50 border border-indigo-100 p-2.5">
-                  <p className="text-xs text-gray-600">Missions</p>
+                  <p className="text-xs text-gray-600">{t('Missions')}</p>
                   <p className="text-lg font-bold text-indigo-700">{agent.completedMissions}</p>
                 </div>
                 <div className="rounded-lg bg-green-50/50 border border-green-100 p-2.5">
-                  <p className="text-xs text-gray-600">Success Rate</p>
+                  <p className="text-xs text-gray-600">{t('Success Rate')}</p>
                   <p className="text-lg font-bold text-green-700">{agent.successRate}%</p>
                 </div>
               </div>
@@ -298,7 +300,7 @@ export function Marketplace() {
               {/* Staked Amount */}
               <div className="mb-4 flex items-center gap-2 text-sm">
                 <Zap className="h-4 w-4 text-purple-600" />
-                <span className="text-gray-600">Staked:</span>
+                <span className="text-gray-600">{t('Staked:')}</span>
                 <span className="font-bold text-purple-600">{agent.staked.toLocaleString()} $TASK</span>
               </div>
 
@@ -311,7 +313,7 @@ export function Marketplace() {
                 }`}
                 disabled={agent.status !== 'Active'}
               >
-                {agent.status === 'Active' ? 'View Profile' : 'Currently Busy'}
+                {agent.status === 'Active' ? t('View Profile') : t('Currently Busy')}
               </button>
             </div>
           ))}
@@ -322,8 +324,8 @@ export function Marketplace() {
         completedMissions.length === 0 ? (
           <div className="rounded-xl border border-indigo-200/40 bg-white/80 backdrop-blur-md p-8 text-center">
             <CheckCircle className="h-10 w-10 text-indigo-300 mx-auto mb-3" />
-            <p className="text-sm font-semibold text-[#1A1B25] mb-1">No completed missions yet</p>
-            <p className="text-xs text-gray-500">Settled missions will appear here once the jury validates them.</p>
+            <p className="text-sm font-semibold text-[#1A1B25] mb-1">{t('No completed missions yet')}</p>
+            <p className="text-xs text-gray-500">{t('Settled missions will appear here once the jury validates them.')}</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
@@ -336,12 +338,12 @@ export function Marketplace() {
                   {mission.isPendingPayout ? (
                     <span className="px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 flex items-center gap-1">
                       <CheckCircle className="h-3.5 w-3.5" />
-                      Pending payout
+                      {t('Pending payout')}
                     </span>
                   ) : (
                     <span className="px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700 flex items-center gap-1">
                       <CheckCircle className="h-3.5 w-3.5" />
-                      Completed
+                      {t('Completed')}
                     </span>
                   )}
                   <span className="text-xs text-gray-500">{mission.completedDate}</span>
@@ -351,29 +353,29 @@ export function Marketplace() {
                   <h3 className="text-lg font-bold text-[#1A1B25] mb-2">{mission.title}</h3>
                   <div className="flex items-center gap-2 text-sm text-gray-600">
                     <Bot className="h-4 w-4 text-indigo-600" />
-                    Posted by <span className="font-semibold text-indigo-700">{mission.client}</span>
+                    {t('Posted by')} <span className="font-semibold text-indigo-700">{mission.client}</span>
                   </div>
                   {mission.winnerShort && (
                     <div className="mt-2 flex items-center gap-2 text-sm text-gray-600">
                       <CheckCircle className="h-4 w-4 text-emerald-600" />
-                      Winner <span className="font-mono font-semibold text-emerald-700">{mission.winnerShort}</span>
+                      {t('Winner')} <span className="font-mono font-semibold text-emerald-700">{mission.winnerShort}</span>
                     </div>
                   )}
                 </div>
 
                 <div className="mb-4 grid grid-cols-2 gap-2">
                   <div className="rounded-lg bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 p-2">
-                    <p className="text-xs text-gray-600">Bounty</p>
+                    <p className="text-xs text-gray-600">{t('Bounty')}</p>
                     <p className="text-base font-bold text-green-700">${mission.bounty.toLocaleString()}</p>
                   </div>
                   <div className="rounded-lg bg-gradient-to-r from-purple-50 to-violet-50 border border-purple-200 p-2">
-                    <p className="text-xs text-gray-600">Jury</p>
-                    <p className="text-base font-bold text-purple-700">{mission.juryVerdict}</p>
+                    <p className="text-xs text-gray-600">{t('Jury')}</p>
+                    <p className="text-base font-bold text-purple-700">{t(mission.juryVerdict)}</p>
                   </div>
                 </div>
 
                 <div className="mb-4">
-                  <p className="text-xs font-semibold text-gray-500 mb-2">Category</p>
+                  <p className="text-xs font-semibold text-gray-500 mb-2">{t('Category')}</p>
                   <div className="flex flex-wrap gap-1.5">
                     {mission.skills.map((skill) => (
                       <span
@@ -390,7 +392,7 @@ export function Marketplace() {
                   to={`/apply-mission/${mission.id}`}
                   className="block text-center w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold py-2.5 px-4 rounded-lg shadow-md hover:shadow-lg hover:scale-[1.02] transition-all duration-300"
                 >
-                  View Full Details
+                  {t('View Full Details')}
                 </Link>
               </div>
             ))}

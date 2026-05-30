@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Lock, Eye, EyeOff, ArrowRight } from 'lucide-react';
 import { useWallet } from '../../../lib/wallet-context';
 import { showError } from '../../../lib/toast';
 
 export function UnlockScreen() {
+  const { t } = useTranslation();
   const { address, unlock, deleteWallet } = useWallet();
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -41,7 +43,7 @@ export function UnlockScreen() {
   async function handleUnlock() {
     if (!password) return;
     if (isTimeLocked) {
-      showError(`Too many attempts. Try again in ${remainingSeconds}s`);
+      showError(t('Too many attempts. Try again in {{count}}s', { count: remainingSeconds }));
       return;
     }
     setLoading(true);
@@ -54,9 +56,9 @@ export function UnlockScreen() {
       if (newAttempts >= 3) {
         const delay = Math.min(30_000, 2000 * Math.pow(2, newAttempts - 3));
         setLockedUntil(Date.now() + delay);
-        showError(`Wrong password. Locked for ${Math.ceil(delay / 1000)}s`);
+        showError(t('Wrong password. Locked for {{count}}s', { count: Math.ceil(delay / 1000) }));
       } else {
-        showError('Wrong password');
+        showError(t('Wrong password'));
       }
     } finally {
       setLoading(false);
@@ -71,7 +73,7 @@ export function UnlockScreen() {
           <div className="mb-4 inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-[#493FEE] shadow-xl shadow-[#493FEE]/25">
             <Lock className="h-8 w-8 text-white" />
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-[#1A1B25]">Welcome Back</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-[#1A1B25]">{t('Welcome Back')}</h1>
           {truncated && (
             <p className="text-sm text-gray-500 mt-1 font-mono">{truncated}</p>
           )}
@@ -86,7 +88,7 @@ export function UnlockScreen() {
             <div className="relative">
               <input
                 type={showPassword ? 'text' : 'password'}
-                placeholder="Enter your password"
+                placeholder={t('Enter your password')}
                 value={password}
                 onChange={e => setPassword(e.target.value)}
                 autoFocus
@@ -103,7 +105,7 @@ export function UnlockScreen() {
 
             {failedAttempts >= 3 && (
               <p className="text-xs text-amber-600 text-center">
-                {failedAttempts} failed attempts. {isTimeLocked ? `Wait ${remainingSeconds}s...` : 'Enter carefully.'}
+                {t('{{count}} failed attempts.', { count: failedAttempts })} {isTimeLocked ? t('Wait {{count}}s...', { count: remainingSeconds }) : t('Enter carefully.')}
               </p>
             )}
 
@@ -112,7 +114,7 @@ export function UnlockScreen() {
               disabled={loading || !password || isTimeLocked}
               className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#493FEE] py-3 font-semibold text-white shadow-lg shadow-[#493FEE]/20 transition-all duration-200 hover:bg-[#3a32be] hover:shadow-xl hover:shadow-[#493FEE]/30 disabled:opacity-50 disabled:shadow-none"
             >
-              {loading ? 'Unlocking...' : <>Unlock <ArrowRight className="h-4 w-4" /></>}
+              {loading ? t('Unlocking...') : <>{t('Unlock')} <ArrowRight className="h-4 w-4" /></>}
             </button>
           </form>
 
@@ -123,23 +125,23 @@ export function UnlockScreen() {
                 onClick={() => setConfirmDelete(true)}
                 className="text-sm text-gray-400 hover:text-red-500 transition-colors"
               >
-                Forgot password? Import a different wallet
+                {t('Forgot password? Import a different wallet')}
               </button>
             ) : (
               <div className="space-y-2">
-                <p className="text-xs text-red-500 font-medium">This will erase the current wallet from this browser. Make sure you have your seed phrase saved.</p>
+                <p className="text-xs text-red-500 font-medium">{t('This will erase the current wallet from this browser. Make sure you have your seed phrase saved.')}</p>
                 <div className="flex gap-2">
                   <button
                     onClick={() => setConfirmDelete(false)}
                     className="flex-1 py-2 rounded-lg border border-gray-200 text-sm text-gray-600 hover:bg-gray-50"
                   >
-                    Cancel
+                    {t('Cancel')}
                   </button>
                   <button
                     onClick={deleteWallet}
                     className="flex-1 py-2 rounded-lg bg-red-500 text-white text-sm font-medium hover:bg-red-600"
                   >
-                    Erase & Reset
+                    {t('Erase & Reset')}
                   </button>
                 </div>
               </div>

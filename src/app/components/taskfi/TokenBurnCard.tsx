@@ -1,4 +1,5 @@
 import { Flame, TrendingUp } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { usePublicStats } from '../../hooks/usePublicStats';
 
 // Compact formatter: 2 800 000 -> "2.8M".
@@ -9,6 +10,7 @@ function compact(n: number): string {
 }
 
 export function TokenBurnCard() {
+  const { t } = useTranslation();
   const { stats, loading } = usePublicStats();
 
   const burned = stats.totalBurned;
@@ -28,9 +30,9 @@ export function TokenBurnCard() {
           </div>
           <div>
             <h3 className="text-sm font-bold text-[#4B3EEF] uppercase tracking-wide flex items-center gap-2">
-              🔥 Tokens Burned
+              🔥 {t('Tokens Burned')}
             </h3>
-            <p className="text-xs text-gray-600">Since protocol launch</p>
+            <p className="text-xs text-gray-600">{t('Since protocol launch')}</p>
           </div>
         </div>
 
@@ -45,7 +47,7 @@ export function TokenBurnCard() {
 
         <div className="space-y-3">
           <div className="flex justify-between items-center p-3 bg-white/60 rounded-xl">
-            <span className="text-sm text-gray-600">% of Supply Burned</span>
+            <span className="text-sm text-gray-600">{t('% of Supply Burned')}</span>
             <span className="font-bold text-red-600 text-lg">
               {loading ? '—' : `${pctBurned.toFixed(1)}%`}
             </span>
@@ -54,9 +56,9 @@ export function TokenBurnCard() {
           <div className="flex items-center gap-2 p-3 bg-green-50/60 rounded-xl border border-green-200/40">
             <TrendingUp className="h-5 w-5 text-green-600" />
             <div className="flex-1">
-              <p className="text-xs text-gray-600">Protocol revenue</p>
+              <p className="text-xs text-gray-600">{t('Protocol revenue')}</p>
               <p className="text-sm font-bold text-green-600">
-                {loading ? '—' : `${compact(stats.totalVolume)} USDC volume`}
+                {loading ? '—' : t('{{amount}} USDC volume', { amount: compact(stats.totalVolume) })}
               </p>
             </div>
           </div>

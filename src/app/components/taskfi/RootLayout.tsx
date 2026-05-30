@@ -19,6 +19,7 @@
  */
 
 import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Outlet } from 'react-router';
 import { Sidebar } from './Sidebar';
 import { TopHeader } from './TopHeader';
@@ -39,14 +40,15 @@ import { showError } from '../../../lib/toast';
  * simply 401 and data contexts fall back to empty/public data.
  */
 function AuthenticatedApp() {
+  const { t } = useTranslation();
   const { address, signMessage } = useWallet();
 
   useEffect(() => {
     if (!address) return;
     void signInWithEthereum(address, signMessage).catch((err: any) => {
-      showError(err?.message ?? 'Sign-in failed — some data may be unavailable');
+      showError(err?.message ?? t('Sign-in failed — some data may be unavailable'));
     });
-  }, [address, signMessage]);
+  }, [address, signMessage, t]);
 
   return (
     <AgentsProvider>

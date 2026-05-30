@@ -10,6 +10,7 @@ import { getPublicClient, TASK_DECIMALS, chainExplorerUrl } from '../../lib/chai
 import { ERC20_ABI, STAKING_REGISTRY_ABI } from '../../lib/abis';
 import { parseUnits, type Address, type Hash } from 'viem';
 import { Link } from 'react-router';
+import { useTranslation } from 'react-i18next';
 
 interface ChainState {
   tier1: bigint;
@@ -37,6 +38,7 @@ function tierFor(amount: bigint, c: ChainState): { name: string; multiplier: num
 }
 
 export function Staking() {
+  const { t } = useTranslation();
   const { agents: rawAgents, loading: agentsLoading, reload: reloadAgents } = useAgents();
   const { config } = useRuntimeConfig();
   const { address, writeContract } = useWallet();
@@ -175,22 +177,22 @@ export function Staking() {
 
   async function handleStake() {
     if (!address || !config?.stakingRegistryAddress || !config?.taskTokenAddress || !chainState) {
-      showError('Wallet or protocol config not ready.');
+      showError(t('Wallet or protocol config not ready.'));
       return;
     }
     if (!Number.isFinite(stakeAmountWhole) || stakeAmountWei < chainState.tier1) {
-      showError(`Minimum stake is ${compact(Number(chainState.tier1) / 10 ** TASK_DECIMALS)} $TASK (T1).`);
+      showError(t('Minimum stake is {{amount}} $TASK (T1).', { amount: compact(Number(chainState.tier1) / 10 ** TASK_DECIMALS) }));
       return;
     }
     if (chainState.balance < stakeAmountWei) {
-      showError(`Insufficient $TASK. You have ${compact(Number(chainState.balance) / 10 ** TASK_DECIMALS)}.`);
+      showError(t('Insufficient $TASK. You have {{amount}}.', { amount: compact(Number(chainState.balance) / 10 ** TASK_DECIMALS) }));
       return;
     }
     setSubmitting(true);
     setProgressMessage('');
     try {
       if (chainState.allowance < stakeAmountWei) {
-        setProgressMessage('Approving $TASK…');
+        setProgressMessage(t('Approving $TASK…'));
         const approveHash = await writeContract({
           address: config.taskTokenAddress as Address,
           abi: ERC20_ABI,
@@ -200,7 +202,7 @@ export function Staking() {
         const pub = getPublicClient();
         if (pub) await pub.waitForTransactionReceipt({ hash: approveHash, timeout: 60_000 });
       }
-      setProgressMessage('Staking on Base…');
+      setProgressMessage(t('Staking on Base…'));
       const txHash = await writeContract({
         address: config.stakingRegistryAddress as Address,
         abi: STAKING_REGISTRY_ABI,
@@ -210,7 +212,7 @@ export function Staking() {
       const pub = getPublicClient();
       if (pub) await pub.waitForTransactionReceipt({ hash: txHash, timeout: 60_000 });
       setLastTx(txHash);
-      showSuccess('Stake committed on-chain.');
+      showSuccess(t('Stake committed on-chain.'));
       await reloadAgents();
     } catch (err: any) {
       const decoded = decodeOnchainError(err);
@@ -231,8 +233,8 @@ export function Staking() {
             <Coins className="h-6 w-6 text-white" />
           </div>
           <div>
-            <h2 className="text-2xl md:text-3xl font-bold text-[#1A1B25]">Staking & Rewards</h2>
-            <p className="text-sm text-gray-600">Stake your agent, track rewards, see the network</p>
+            <h2 className="text-2xl md:text-3xl font-bold text-[#1A1B25]">{t('Staking & Rewards')}</h2>
+            <p className="text-sm text-gray-600">{t('Stake your agent, track rewards, see the network')}</p>
           </div>
         </div>
       </div>
@@ -240,11 +242,9 @@ export function Staking() {
       <div className="mb-6 rounded-xl border border-indigo-200/50 bg-indigo-50/40 p-4 flex items-start gap-3">
         <Info className="h-5 w-5 text-indigo-600 mt-0.5 shrink-0" />
         <div className="text-sm text-indigo-900 leading-relaxed">
-          Dashboard staking is scoped to <strong>the wallet connected in this browser</strong>. The 50 demo agents
-          that run via the headless runner stake through the SDK — their keys never enter this browser. To stake
-          from this dashboard, either{' '}
-          <Link to="/create-agent" className="font-semibold underline">mint your own Agent Passport</Link>{' '}
-          (recommended) or import a demo agent's private key via the wallet setup flow.
+          {t('Dashboard staking is scoped to')} <strong>{t('the wallet connected in this browser')}</strong>. {t('The 50 demo agents that run via the headless runner stake through the SDK — their keys never enter this browser. To stake from this dashboard, either')}{' '}
+          <Link to="/create-agent" className="font-semibold underline">{t('mint your own Agent Passport')}</Link>{' '}
+          {t('(recommended) or import a demo agent\'s private key via the wallet setup flow.')}
         </div>
       </div>
 
@@ -252,8 +252,7 @@ export function Staking() {
         <div className="mb-6 rounded-xl border border-amber-200/60 bg-amber-50/60 p-4 flex items-start gap-3">
           <AlertCircle className="h-5 w-5 text-amber-700 mt-0.5 shrink-0" />
           <div className="text-sm text-amber-900 leading-relaxed">
-            $TASK total supply on this chain is currently 0. Staking opens after the token distribution event.
-            The slider below previews the tier system but the commit button is disabled.
+            {t('$TASK total supply on this chain is currently 0. Staking opens after the token distribution event. The slider below previews the tier system but the commit button is disabled.')}
           </div>
         </div>
       )}
@@ -261,7 +260,7 @@ export function Staking() {
       <section className="mb-8">
         <h3 className="text-lg font-bold text-[#1A1B25] mb-4 flex items-center gap-2">
           <TrendingUp className="h-5 w-5 text-indigo-600" />
-          Portfolio Overview
+          {t('Portfolio Overview')}
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="rounded-xl border border-indigo-200/40 bg-gradient-to-br from-indigo-50/80 to-purple-50/60 backdrop-blur-md p-6 shadow-lg">
@@ -270,8 +269,8 @@ export function Staking() {
                 <Coins className="h-6 w-6 text-white" />
               </div>
               <div>
-                <p className="text-sm font-medium text-gray-600">Network Total $TASK Staked</p>
-                <p className="text-xs text-gray-500">Across all agents</p>
+                <p className="text-sm font-medium text-gray-600">{t('Network Total $TASK Staked')}</p>
+                <p className="text-xs text-gray-500">{t('Across all agents')}</p>
               </div>
             </div>
             <p className="text-4xl font-bold text-indigo-700">{compact(totalStaked)}</p>
@@ -284,8 +283,8 @@ export function Staking() {
                 <Award className="h-6 w-6 text-white" />
               </div>
               <div>
-                <p className="text-sm font-medium text-gray-600">Total Rewards Earned</p>
-                <p className="text-xs text-gray-500">All time</p>
+                <p className="text-sm font-medium text-gray-600">{t('Total Rewards Earned')}</p>
+                <p className="text-xs text-gray-500">{t('All time')}</p>
               </div>
             </div>
             <div className="flex items-baseline gap-3">
@@ -306,27 +305,27 @@ export function Staking() {
       <section className="mb-8">
         <h3 className="text-lg font-bold text-[#1A1B25] mb-4 flex items-center gap-2">
           <Target className="h-5 w-5 text-indigo-600" />
-          My Staking
+          {t('My Staking')}
         </h3>
         {!address && (
           <div className="rounded-xl border border-indigo-200/40 bg-white/80 backdrop-blur-md p-8 shadow-lg text-center">
-            <p className="text-sm text-gray-500">Connect a wallet to view your stake.</p>
+            <p className="text-sm text-gray-500">{t('Connect a wallet to view your stake.')}</p>
           </div>
         )}
         {address && !passportLoaded && (
           <div className="rounded-xl border border-indigo-200/40 bg-white/80 backdrop-blur-md p-8 shadow-lg text-center">
-            <p className="text-sm text-gray-500">Loading passport…</p>
+            <p className="text-sm text-gray-500">{t('Loading passport…')}</p>
           </div>
         )}
         {address && passportLoaded && !hasPassport && (
           <div className="rounded-xl border border-indigo-200/40 bg-white/80 backdrop-blur-md p-8 shadow-lg text-center space-y-3">
             <Bot className="h-10 w-10 text-indigo-300 mx-auto" />
-            <p className="text-sm font-semibold text-[#1A1B25]">This wallet has no Agent Passport.</p>
+            <p className="text-sm font-semibold text-[#1A1B25]">{t('This wallet has no Agent Passport.')}</p>
             <Link
               to="/create-agent"
               className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold text-sm hover:shadow-lg"
             >
-              Mint Agent Passport
+              {t('Mint Agent Passport')}
             </Link>
           </div>
         )}
@@ -340,17 +339,17 @@ export function Staking() {
                 <div>
                   <h4 className="font-bold text-[#1A1B25]">{address.slice(0, 6)}…{address.slice(-4)}</h4>
                   <p className="text-xs text-gray-500">
-                    Current Stake: {compact(Number(chainState.staked) / 10 ** TASK_DECIMALS)} $TASK
+                    {t('Current Stake: {{amount}} $TASK', { amount: compact(Number(chainState.staked) / 10 ** TASK_DECIMALS) })}
                   </p>
                 </div>
               </div>
               <div className="flex gap-3">
                 <div className="text-right">
-                  <p className="text-xs text-gray-500">Tier</p>
+                  <p className="text-xs text-gray-500">{t('Tier')}</p>
                   <p className="text-lg font-bold text-indigo-700">{currentTier?.name}</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-xs text-gray-500">Multiplier</p>
+                  <p className="text-xs text-gray-500">{t('Multiplier')}</p>
                   <p className="text-lg font-bold text-purple-700">×{currentTier?.multiplier}</p>
                 </div>
               </div>
@@ -360,22 +359,22 @@ export function Staking() {
               <div className="rounded-lg bg-indigo-50 border border-indigo-200 p-3 mb-3 flex items-start gap-2">
                 <Lock className="h-4 w-4 text-indigo-700 mt-0.5 shrink-0" />
                 <p className="text-xs text-indigo-900">
-                  This wallet has an active stake. Unstake flow is not yet wired into the dashboard — use the SDK
-                  (<code className="font-mono">stakingRegistry.requestUnstake()</code>) for now.
+                  {t('This wallet has an active stake. Unstake flow is not yet wired into the dashboard — use the SDK')}
+                  {' '}(<code className="font-mono">stakingRegistry.requestUnstake()</code>) {t('for now.')}
                 </p>
               </div>
             ) : cooldownRemainingMs > 0 ? (
               <div className="rounded-lg bg-amber-50 border border-amber-200 p-3 mb-3 flex items-start gap-2">
                 <Clock className="h-4 w-4 text-amber-700 mt-0.5 shrink-0" />
                 <p className="text-xs text-amber-900">
-                  Cooldown active — can re-stake in {Math.ceil(cooldownRemainingMs / 1000 / 3600)}h.
+                  {t('Cooldown active — can re-stake in {{hours}}h.', { hours: Math.ceil(cooldownRemainingMs / 1000 / 3600) })}
                 </p>
               </div>
             ) : (
               <>
                 <div className="mb-3">
                   <label className="block text-xs text-gray-600 mb-1" htmlFor="stake-amount">
-                    Stake amount ($TASK)
+                    {t('Stake amount ($TASK)')}
                   </label>
                   <input
                     id="stake-amount"
@@ -402,13 +401,13 @@ export function Staking() {
 
                 <div className="grid grid-cols-2 gap-3 mb-4 text-xs">
                   <div className="rounded-lg bg-gray-50 border border-gray-200 p-3">
-                    <p className="text-gray-500">Your $TASK balance</p>
+                    <p className="text-gray-500">{t('Your $TASK balance')}</p>
                     <p className="text-sm font-bold text-[#1A1B25] mt-1">
                       {compact(Number(chainState.balance) / 10 ** TASK_DECIMALS)} $TASK
                     </p>
                   </div>
                   <div className="rounded-lg bg-gray-50 border border-gray-200 p-3">
-                    <p className="text-gray-500">Resulting tier (preview)</p>
+                    <p className="text-gray-500">{t('Resulting tier (preview)')}</p>
                     <p className="text-sm font-bold text-indigo-700 mt-1">
                       {tierFor(stakeAmountWei, chainState).name} (×{tierFor(stakeAmountWei, chainState).multiplier})
                     </p>
@@ -421,7 +420,7 @@ export function Staking() {
                   disabled={submitting || preLaunchSupplyZero}
                   className="w-full px-4 py-3 rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold text-sm shadow-md hover:shadow-lg disabled:opacity-60 disabled:cursor-not-allowed transition-all"
                 >
-                  {submitting ? progressMessage || 'Submitting…' : preLaunchSupplyZero ? 'Staking disabled (supply = 0)' : 'Commit Stake'}
+                  {submitting ? progressMessage || t('Submitting…') : preLaunchSupplyZero ? t('Staking disabled (supply = 0)') : t('Commit Stake')}
                 </button>
 
                 {lastTx && (
@@ -432,7 +431,7 @@ export function Staking() {
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-1 text-indigo-600 hover:text-indigo-700 font-semibold"
                     >
-                      Last stake tx <ExternalLink className="h-3 w-3" />
+                      {t('Last stake tx')} <ExternalLink className="h-3 w-3" />
                     </a>
                   </p>
                 )}
@@ -445,28 +444,28 @@ export function Staking() {
       <section className="mb-8">
         <h3 className="text-lg font-bold text-[#1A1B25] mb-4 flex items-center gap-2">
           <Bot className="h-5 w-5 text-indigo-600" />
-          Network Leaderboard
+          {t('Network Leaderboard')}
         </h3>
         <div className="rounded-xl border border-indigo-200/40 bg-white/80 backdrop-blur-md overflow-hidden shadow-lg">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-indigo-50/60 border-b border-indigo-200/40">
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wide">Agent</th>
-                  <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wide">Specialty</th>
-                  <th className="px-4 py-3 text-right text-xs font-bold text-gray-600 uppercase tracking-wide">Stake</th>
-                  <th className="px-4 py-3 text-right text-xs font-bold text-gray-600 uppercase tracking-wide">Reputation</th>
+                  <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wide">{t('Agent')}</th>
+                  <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wide">{t('Specialty')}</th>
+                  <th className="px-4 py-3 text-right text-xs font-bold text-gray-600 uppercase tracking-wide">{t('Stake')}</th>
+                  <th className="px-4 py-3 text-right text-xs font-bold text-gray-600 uppercase tracking-wide">{t('Reputation')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-indigo-100">
                 {agentsLoading && leaderboard.length === 0 && (
                   <tr>
-                    <td colSpan={4} className="px-4 py-8 text-center text-gray-400">Loading…</td>
+                    <td colSpan={4} className="px-4 py-8 text-center text-gray-400">{t('Loading…')}</td>
                   </tr>
                 )}
                 {!agentsLoading && leaderboard.length === 0 && (
                   <tr>
-                    <td colSpan={4} className="px-4 py-8 text-center text-gray-400">No agents yet.</td>
+                    <td colSpan={4} className="px-4 py-8 text-center text-gray-400">{t('No agents yet.')}</td>
                   </tr>
                 )}
                 {leaderboard.map((agent) => (

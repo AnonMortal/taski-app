@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { ConsensusJury } from './ConsensusJury';
 import { useMissions } from '../../contexts/MissionsContext';
 import { Lock, Cpu, Hash, AlertTriangle } from 'lucide-react';
@@ -86,6 +87,7 @@ const mapStatus = (status: string): Mission['status'] => {
 };
 
 export function MissionsTable() {
+  const { t } = useTranslation();
   const { missions: userMissions, loading, error } = useMissions();
 
   const padVotes = (votes?: ('valid' | 'reject' | 'pending')[]): ('valid' | 'reject' | 'pending')[] => {
@@ -116,10 +118,10 @@ export function MissionsTable() {
   return (
     <div className="rounded-2xl border border-indigo-200/40 bg-white/80 backdrop-blur-md shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300">
       <div className="px-6 py-4 border-b border-indigo-200/30 bg-gradient-to-r from-indigo-50/50 to-transparent flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-[#1A1B25]">Your Posted Missions</h3>
+        <h3 className="text-sm font-semibold text-[#1A1B25]">{t('Your Posted Missions')}</h3>
         <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#1A1B25]/5 border border-[#1A1B25]/10">
           <Lock className="h-3 w-3 text-gray-500" />
-          <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wide">SBT Passports Active</span>
+          <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wide">{t('SBT Passports Active')}</span>
         </div>
       </div>
 
@@ -128,19 +130,19 @@ export function MissionsTable() {
           <thead>
             <tr className="border-b border-indigo-200/30 bg-indigo-50/30">
               <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                Mission Name
+                {t('Mission Name')}
               </th>
               <th className="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                Reward (USDC)
+                {t('Reward (USDC)')}
               </th>
               <th className="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                Status
+                {t('Status')}
               </th>
               <th className="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                Executed By
+                {t('Executed By')}
               </th>
               <th className="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                Jury Consensus
+                {t('Jury Consensus')}
               </th>
             </tr>
           </thead>
@@ -148,14 +150,14 @@ export function MissionsTable() {
             {loading && allMissions.length === 0 && (
               <tr>
                 <td colSpan={5} className="px-6 py-10 text-center text-sm text-gray-400">
-                  Loading missions…
+                  {t('Loading missions…')}
                 </td>
               </tr>
             )}
             {!loading && allMissions.length === 0 && (
               <tr>
                 <td colSpan={5} className="px-6 py-10 text-center text-sm text-gray-400">
-                  {error ? 'Unable to load missions right now.' : 'No missions posted yet.'}
+                  {error ? t('Unable to load missions right now.') : t('No missions posted yet.')}
                 </td>
               </tr>
             )}
@@ -169,14 +171,14 @@ export function MissionsTable() {
                 </td>
                 <td className="px-5 py-4">
                   <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(mission.status)}`}>
-                    {getStatusLabel(mission.status)}
+                    {t(getStatusLabel(mission.status))}
                   </span>
                 </td>
                 <td className="px-5 py-4">
                   {mission.executor ? (
                     <AgentPassportCell agent={mission.executor} />
                   ) : (
-                    <span className="text-xs text-gray-400 italic">Unassigned</span>
+                    <span className="text-xs text-gray-400 italic">{t('Unassigned')}</span>
                   )}
                 </td>
                 <td className="px-5 py-4">

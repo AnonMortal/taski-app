@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import {
   Lock, Plus, Cpu, Bot, Brain,
@@ -66,6 +67,7 @@ function formatUsdc(raw: string): string {
 }
 
 export function AgentCenter() {
+  const { t } = useTranslation();
   const { address } = useWallet();
   const { config } = useRuntimeConfig();
   const explorerBase = config?.chainId === 84532 ? 'https://sepolia.basescan.org' : 'https://basescan.org';
@@ -120,8 +122,8 @@ export function AgentCenter() {
             <Cpu className="h-6 w-6 text-white" />
           </div>
           <div>
-            <h2 className="text-2xl md:text-3xl font-bold text-[#1A1B25]">Agent Hub</h2>
-            <p className="text-sm text-gray-600">Manage and optimize your AI agent portfolio</p>
+            <h2 className="text-2xl md:text-3xl font-bold text-[#1A1B25]">{t('Agent Hub')}</h2>
+            <p className="text-sm text-gray-600">{t('Manage and optimize your AI agent portfolio')}</p>
           </div>
         </div>
 
@@ -129,7 +131,7 @@ export function AgentCenter() {
         <div className="mb-4 flex items-start gap-3 rounded-2xl border border-[#4B3EEF]/20 bg-[#EBEAFE]/60 px-5 py-4 max-w-2xl">
           <Lock className="h-4 w-4 text-[#4B3EEF] mt-0.5 shrink-0" />
           <p className="text-sm text-[#4B3EEF] leading-relaxed">
-            All passports are <strong>permanently locked</strong> per ERC-5192 standard (<code className="font-mono bg-indigo-100 px-1 rounded text-xs">locked = true</code>). Token metadata is updated on-chain by the Jury after each mission. Passports cannot be transferred or burned.
+            {t('All passports are')} <strong>{t('permanently locked')}</strong> {t('per ERC-5192 standard')} (<code className="font-mono bg-indigo-100 px-1 rounded text-xs">locked = true</code>). {t('Token metadata is updated on-chain by the Jury after each mission. Passports cannot be transferred or burned.')}
           </p>
         </div>
 
@@ -140,8 +142,8 @@ export function AgentCenter() {
           >
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-[#1A1B25] text-xl font-bold mb-1">Create your AI Agent</h3>
-                <p className="text-gray-700 text-sm">Deploy an agent, start earning from the marketplace — and mint your on-chain passport.</p>
+                <h3 className="text-[#1A1B25] text-xl font-bold mb-1">{t('Create your AI Agent')}</h3>
+                <p className="text-gray-700 text-sm">{t('Deploy an agent, start earning from the marketplace — and mint your on-chain passport.')}</p>
               </div>
               <div className="flex h-14 w-14 items-center justify-center rounded-full bg-indigo-600 shadow-lg">
                 <Plus className="h-8 w-8 text-white" />
@@ -155,39 +157,39 @@ export function AgentCenter() {
       <div className="mb-10">
         <h3 className="text-lg font-bold text-[#1A1B25] mb-4 flex items-center gap-2">
           <Bot className="h-5 w-5 text-indigo-600" />
-          Your Agent Portfolio
+          {t('Your Agent Portfolio')}
         </h3>
 
         {loading && (
           <div className="flex items-center gap-2 text-sm text-gray-500 py-12 justify-center">
             <Loader2 className="h-4 w-4 animate-spin" />
-            Loading agent passport…
+            {t('Loading agent passport…')}
           </div>
         )}
 
         {!loading && error && (
           <div className="rounded-xl border border-red-200 bg-red-50/50 p-6 text-sm text-red-700">
-            Failed to load agent data: {error}
+            {t('Failed to load agent data: {{error}}', { error })}
           </div>
         )}
 
         {!loading && !error && !address && (
           <div className="rounded-xl border border-indigo-200/40 bg-white/80 backdrop-blur-md p-8 text-center text-sm text-gray-500">
-            Connect a wallet to view your agent portfolio.
+            {t('Connect a wallet to view your agent portfolio.')}
           </div>
         )}
 
         {!loading && !error && address && !hasAgent && (
           <div className="rounded-xl border border-indigo-200/40 bg-white/80 backdrop-blur-md p-8 text-center">
             <Bot className="h-10 w-10 text-indigo-300 mx-auto mb-3" />
-            <p className="text-sm font-semibold text-[#1A1B25] mb-1">No passport minted yet</p>
-            <p className="text-xs text-gray-500 mb-4">Deploy an agent to mint your on-chain ERC-5192 passport.</p>
+            <p className="text-sm font-semibold text-[#1A1B25] mb-1">{t('No passport minted yet')}</p>
+            <p className="text-xs text-gray-500 mb-4">{t('Deploy an agent to mint your on-chain ERC-5192 passport.')}</p>
             <Link
               to="/create-agent"
               className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#4B3EEF] text-white text-sm font-semibold hover:bg-[#3D32D9] transition-colors"
             >
               <Plus className="h-4 w-4" />
-              Create Agent
+              {t('Create Agent')}
             </Link>
           </div>
         )}
@@ -205,7 +207,7 @@ export function AgentCenter() {
                 </div>
                 <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#1A1B25]">
                   <Lock className="h-2.5 w-2.5 text-white" />
-                  <span className="text-[9px] font-bold text-white uppercase tracking-wide">Soulbound</span>
+                  <span className="text-[9px] font-bold text-white uppercase tracking-wide">{t('Soulbound')}</span>
                 </div>
               </div>
 
@@ -217,7 +219,7 @@ export function AgentCenter() {
                       <Bot className="h-6 w-6 text-white" />
                     </div>
                     <div>
-                      <h4 className="font-bold text-[#1A1B25]">{passport?.name ?? 'Agent'}</h4>
+                      <h4 className="font-bold text-[#1A1B25]">{passport?.name ?? t('Agent')}</h4>
                       <p className="text-xs text-gray-500 font-mono">
                         {address?.slice(0, 6)}…{address?.slice(-4)}
                       </p>
@@ -233,20 +235,20 @@ export function AgentCenter() {
                 <div className="mb-4 rounded-lg border border-indigo-100 bg-[#F4F5FF] p-3 space-y-2">
                   <div>
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">Trust Score</span>
+                      <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">{t('Trust Score')}</span>
                       {losses > 0 ? (
                         <span className="flex items-center gap-1 text-[10px] font-semibold text-red-600">
                           <AlertTriangle className="h-3 w-3" />
-                          {losses} loss{losses > 1 ? 'es' : ''}
+                          {t('{{count}} losses', { count: losses })}
                         </span>
                       ) : (
-                        <span className="text-[10px] font-semibold text-green-600">Clean record</span>
+                        <span className="text-[10px] font-semibold text-green-600">{t('Clean record')}</span>
                       )}
                     </div>
                     <TrustBar score={trustScore} />
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <span className="text-[11px] text-gray-500">Primary category:</span>
+                    <span className="text-[11px] text-gray-500">{t('Primary category:')}</span>
                     <span className="text-[11px] font-semibold text-[#4B3EEF]">{primarySkill}</span>
                   </div>
                 </div>
@@ -254,19 +256,19 @@ export function AgentCenter() {
                 {/* Performance metrics */}
                 <div className="mb-4 grid grid-cols-2 gap-2">
                   <div className="rounded-lg bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 p-2">
-                    <p className="text-xs text-gray-600">Pending</p>
+                    <p className="text-xs text-gray-600">{t('Pending')}</p>
                     <p className="text-base font-bold text-green-700">{formatUsdc(pendingEarnings)}</p>
                   </div>
                   <div className="rounded-lg bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 p-2">
-                    <p className="text-xs text-gray-600">In-flight</p>
+                    <p className="text-xs text-gray-600">{t('In-flight')}</p>
                     <p className="text-base font-bold text-blue-700">{Math.max(0, totalMissions - completed - losses)}</p>
                   </div>
                   <div className="rounded-lg bg-gradient-to-r from-purple-50 to-violet-50 border border-purple-200 p-2">
-                    <p className="text-xs text-gray-600">Completed</p>
+                    <p className="text-xs text-gray-600">{t('Completed')}</p>
                     <p className="text-base font-bold text-purple-700">{completed}</p>
                   </div>
                   <div className="rounded-lg bg-gradient-to-r from-[#4B3EEF]/10 to-[#3D32D9]/5 border border-[#4B3EEF]/30 p-2">
-                    <p className="text-xs text-gray-600">Success</p>
+                    <p className="text-xs text-gray-600">{t('Success')}</p>
                     <p className="text-base font-bold text-amber-700">{successRate}%</p>
                   </div>
                 </div>
@@ -274,7 +276,7 @@ export function AgentCenter() {
                 {/* Categories */}
                 {profile && profile.categories.length > 0 && (
                   <div className="mb-3">
-                    <p className="text-xs font-semibold text-gray-500 mb-2">Categories</p>
+                    <p className="text-xs font-semibold text-gray-500 mb-2">{t('Categories')}</p>
                     <div className="flex flex-wrap gap-1.5">
                       {profile.categories.slice(0, 5).map((cat) => (
                         <span key={cat} className="px-2 py-0.5 rounded-md bg-indigo-100 text-indigo-700 text-xs font-medium">
@@ -287,7 +289,7 @@ export function AgentCenter() {
 
                 {passport?.endpoint && (
                   <div className="mb-3 rounded-lg bg-gray-50 border border-gray-200 p-2.5">
-                    <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">Endpoint</p>
+                    <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">{t('Endpoint')}</p>
                     <p className="text-xs font-mono text-gray-700 break-all">{passport.endpoint}</p>
                   </div>
                 )}
@@ -297,7 +299,7 @@ export function AgentCenter() {
                     to="/marketplace"
                     className="text-center bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md hover:shadow-lg transition-all text-sm"
                   >
-                    Find Missions
+                    {t('Find Missions')}
                   </Link>
                   <a
                     href={`${explorerBase}/address/${address}`}
@@ -313,7 +315,7 @@ export function AgentCenter() {
                 {pendingEarnings !== '0' && (
                   <div className="mt-3 flex items-center gap-2 text-xs text-green-700 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
                     <DollarSign className="h-3.5 w-3.5" />
-                    {formatUsdc(pendingEarnings)} pending — claim from Staking & Rewards.
+                    {t('{{amount}} pending — claim from Staking & Rewards.', { amount: formatUsdc(pendingEarnings) })}
                   </div>
                 )}
               </div>

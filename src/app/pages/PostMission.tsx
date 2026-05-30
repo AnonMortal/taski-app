@@ -1,5 +1,6 @@
 import { Target, FileText, DollarSign, Shield, Upload, Lock, User, Building2, CheckCircle, X, ExternalLink, CreditCard, Wallet } from 'lucide-react';
 import { useState, useMemo, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { motion } from 'motion/react';
 import { useMissions } from '../contexts/MissionsContext';
 import { useNavigate } from 'react-router';
@@ -19,6 +20,7 @@ import type { Address, Hash } from 'viem';
 type ProgressStep = 'idle' | 'preflight' | 'funding' | 'approving' | 'locking' | 'saving' | 'success' | 'error';
 
 export function PostMission() {
+  const { t } = useTranslation();
   const [bountyAmount, setBountyAmount] = useState(1000);
   const [posterType, setPosterType] = useState<'individual' | 'enterprise'>('individual');
   const [companyName, setCompanyName] = useState('');
@@ -251,8 +253,8 @@ export function PostMission() {
             <Target className="h-6 w-6 text-white" />
           </div>
           <div>
-            <h2 className="text-2xl md:text-3xl font-bold text-[#1A1B25]">Find the perfect Agent for your task</h2>
-            <p className="text-sm text-gray-600">Secure escrow • Quality guaranteed by consensus jury</p>
+            <h2 className="text-2xl md:text-3xl font-bold text-[#1A1B25]">{t('Find the perfect Agent for your task')}</h2>
+            <p className="text-sm text-gray-600">{t('Secure escrow • Quality guaranteed by consensus jury')}</p>
           </div>
         </div>
       </div>
@@ -265,7 +267,7 @@ export function PostMission() {
           <div className="mb-8">
             <div className="flex items-center gap-2 mb-4">
               <User className="h-5 w-5 text-indigo-600" />
-              <h3 className="text-lg font-semibold text-[#1A1B25]">Who's posting this mission?</h3>
+              <h3 className="text-lg font-semibold text-[#1A1B25]">{t("Who's posting this mission?")}</h3>
             </div>
             
             <div className="space-y-4">
@@ -283,9 +285,9 @@ export function PostMission() {
                   <User className={`h-5 w-5 ${posterType === 'individual' ? 'text-indigo-600' : 'text-gray-500'}`} />
                   <div className="text-left">
                     <p className={`font-semibold ${posterType === 'individual' ? 'text-indigo-900' : 'text-gray-700'}`}>
-                      Individual
+                      {t('Individual')}
                     </p>
-                    <p className="text-xs text-gray-600">Personal project</p>
+                    <p className="text-xs text-gray-600">{t('Personal project')}</p>
                   </div>
                 </button>
 
@@ -301,9 +303,9 @@ export function PostMission() {
                   <Building2 className={`h-5 w-5 ${posterType === 'enterprise' ? 'text-[#4B3EEF]' : 'text-gray-500'}`} />
                   <div className="text-left">
                     <p className={`font-semibold ${posterType === 'enterprise' ? 'text-[#4B3EEF]' : 'text-gray-700'}`}>
-                      Enterprise
+                      {t('Enterprise')}
                     </p>
-                    <p className="text-xs text-gray-600">Company project</p>
+                    <p className="text-xs text-gray-600">{t('Company project')}</p>
                   </div>
                 </button>
               </div>
@@ -331,7 +333,7 @@ export function PostMission() {
           <div className="mb-8">
             <div className="flex items-center gap-2 mb-4">
               <FileText className="h-5 w-5 text-indigo-600" />
-              <h3 className="text-lg font-semibold text-[#1A1B25]">Mission Details</h3>
+              <h3 className="text-lg font-semibold text-[#1A1B25]">{t('Mission Details')}</h3>
             </div>
             
             <div className="space-y-4">
@@ -438,7 +440,7 @@ export function PostMission() {
           <div className="mb-8">
             <div className="flex items-center gap-2 mb-4">
               <FileText className="h-5 w-5 text-indigo-600" />
-              <h3 className="text-lg font-semibold text-[#1A1B25]">Mission Category</h3>
+              <h3 className="text-lg font-semibold text-[#1A1B25]">{t('Mission Category')}</h3>
             </div>
             
             <div className="space-y-4">
@@ -466,7 +468,7 @@ export function PostMission() {
           <div className="mb-8">
             <div className="flex items-center gap-2 mb-4">
               <DollarSign className="h-5 w-5 text-green-600" />
-              <h3 className="text-lg font-semibold text-[#1A1B25]">Bounty Setup</h3>
+              <h3 className="text-lg font-semibold text-[#1A1B25]">{t('Bounty Setup')}</h3>
             </div>
             
             <div className="space-y-4">
@@ -544,7 +546,7 @@ export function PostMission() {
                 <Lock className="h-5 w-5 text-white" />
               </div>
               <div>
-                <h4 className="font-semibold text-[#1A1B25] mb-1">Secure Escrow Protection</h4>
+                <h4 className="font-semibold text-[#1A1B25] mb-1">{t('Secure Escrow Protection')}</h4>
                 <p className="text-sm text-gray-700">
                   Your funds are locked in a smart contract escrow. They will only be released when the jury validates 
                   the agent's work. If the mission is cancelled or fails validation, you receive a full refund.
@@ -610,14 +612,14 @@ export function PostMission() {
 
             {/* Button text */}
             <span className="relative z-10">
-              {progress === 'funding' && 'Waiting for payment…'}
-              {progress === 'approving' && 'Approving USDC…'}
-              {progress === 'locking' && 'Locking bounty on Base…'}
-              {progress === 'saving' && 'Saving mission…'}
-              {progress === 'preflight' && 'Checking balances…'}
-              {progress === 'success' && '🎉 Mission posted on-chain'}
-              {progress === 'error' && 'Try again'}
-              {progress === 'idle' && (ONRAMP_ENABLED ? 'Pay by card & post mission' : 'Lock Bounty & Post Mission')}
+              {progress === 'funding' && t('Waiting for payment…')}
+              {progress === 'approving' && t('Approving USDC…')}
+              {progress === 'locking' && t('Locking bounty on Base…')}
+              {progress === 'saving' && t('Saving mission…')}
+              {progress === 'preflight' && t('Checking balances…')}
+              {progress === 'success' && t('🎉 Mission posted on-chain')}
+              {progress === 'error' && t('Try again')}
+              {progress === 'idle' && (ONRAMP_ENABLED ? t('Pay by card & post mission') : t('Lock Bounty & Post Mission'))}
             </span>
           </motion.button>
 
@@ -632,7 +634,7 @@ export function PostMission() {
               className="mt-3 w-full font-bold py-4 px-6 rounded-xl border-2 border-[#4B3EEF] text-[#4B3EEF] bg-white/70 hover:bg-[#4B3EEF]/10 hover:shadow-md transition-all duration-300 flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Wallet className="h-5 w-5" />
-              Pay with USDC from my wallet
+              {t('Pay with USDC from my wallet')}
             </button>
           )}
 
@@ -651,7 +653,7 @@ export function PostMission() {
           )}
           {progress === 'idle' && (
             <p className="text-xs text-center text-gray-500 mt-4">
-              Funds will be held in escrow until mission completion is verified.
+              {t('Funds will be held in escrow until mission completion is verified.')}
             </p>
           )}
         </div>

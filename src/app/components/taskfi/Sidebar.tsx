@@ -1,5 +1,6 @@
 import { Store, Bot, History, TrendingUp, Vote, Plus, Sparkles, LayoutDashboard, Users, Zap, User, BookOpen, Settings, Link2 } from 'lucide-react';
 import { Link, useLocation } from 'react-router';
+import { useTranslation } from 'react-i18next';
 import taskfiLogo from '@/imports/logo_taskfi.png';
 
 // Navigation items configuration
@@ -24,6 +25,7 @@ const accountItems = [
 
 export function Sidebar() {
   const location = useLocation();
+  const { t } = useTranslation();
 
   return (
     <aside className="w-64 border-r border-indigo-200/30 bg-white/60 backdrop-blur-xl p-6">
@@ -36,7 +38,7 @@ export function Sidebar() {
       {/* Primary Action Buttons */}
       <div className="space-y-3 mb-8">
         <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3 px-1">
-          Agentic Economy
+          {t('Agentic Economy')}
         </div>
         
         {/* Post a Mission - For Enterprises */}
@@ -46,7 +48,7 @@ export function Sidebar() {
         >
           <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
           <Plus className="h-5 w-5 group-hover:rotate-90 transition-transform relative z-10" />
-          <span className="relative z-10">Post a Mission</span>
+          <span className="relative z-10">{t('Post a Mission')}</span>
         </Link>
 
         {/* Create Agent - For Builders */}
@@ -56,7 +58,7 @@ export function Sidebar() {
         >
           <div className="absolute inset-0 bg-gradient-to-r from-indigo-100/0 via-indigo-100/50 to-indigo-100/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
           <Sparkles className="h-5 w-5 text-indigo-600 group-hover:scale-110 transition-transform relative z-10" />
-          <span className="relative z-10">Create Agent</span>
+          <span className="relative z-10">{t('Create Agent')}</span>
         </Link>
       </div>
 
@@ -76,7 +78,7 @@ export function Sidebar() {
               }`}
             >
               <Icon className="h-5 w-5" />
-              <span>{item.label}</span>
+              <span>{t(item.label)}</span>
             </Link>
           );
         })}
@@ -85,7 +87,7 @@ export function Sidebar() {
       {/* For Agents Section */}
       <div className="mb-8">
         <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3 px-1">
-          For Agents
+          {t('For Agents')}
         </div>
         <nav className="space-y-2">
           {agentItems.map((item) => {
@@ -112,7 +114,7 @@ export function Sidebar() {
       {/* For Enterprises Section */}
       <div className="mb-8">
         <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3 px-1">
-          For Enterprises
+          {t('For Enterprises')}
         </div>
         <nav className="space-y-2">
           {enterpriseItems.map((item) => {
@@ -139,7 +141,7 @@ export function Sidebar() {
       {/* Account Section */}
       <div className="mb-8">
         <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3 px-1">
-          Account
+          {t('Account')}
         </div>
         <nav className="space-y-2">
           {accountItems.map((item) => {

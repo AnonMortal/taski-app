@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'motion/react';
 import { CreditCard, X, CheckCircle, ShieldCheck, Loader2, Fuel, Mail } from 'lucide-react';
 import type { Address } from 'viem';
@@ -39,6 +40,7 @@ export function OnrampModal({
   onFunded,
   onClose,
 }: OnrampModalProps) {
+  const { t } = useTranslation();
   const [step, setStep] = useState<ModalStep>('form');
   const [message, setMessage] = useState('');
   const [declined, setDeclined] = useState(false);
@@ -58,12 +60,12 @@ export function OnrampModal({
     if (!address || !usdc) {
       setDeclined(false);
       setStep('error');
-      setMessage('Wallet or USDC config not ready. Reload and try again.');
+      setMessage(t('Wallet or USDC config not ready. Reload and try again.'));
       return;
     }
     setStep('processing');
     try {
-      setMessage('Processing your card…');
+      setMessage(t('Processing your card…'));
       await ensureAuth();
 
       // Card-payment allowlist: a non-approved company's card is declined.
@@ -72,39 +74,39 @@ export function OnrampModal({
         setContactEmail(elig.requestAccessEmail);
         setDeclined(true);
         setStep('error');
-        setMessage('Your card was not accepted. Please contact the project team.');
+        setMessage(t('Your card was not accepted. Please contact the project team.'));
         return;
       }
 
       // 1) Card payment → USDC delivery.
       if (isCoinbase) {
-        setMessage('Complete your card payment in the Coinbase window…');
+        setMessage(t('Complete your card payment in the Coinbase window…'));
         await openCoinbaseOnramp({ amountUsdc });
       }
 
       // 2) Project gas grant (+ test USDC delivery in dev mock mode).
-      setMessage('Adding funds to your wallet…');
+      setMessage(t('Adding funds to your wallet…'));
       await requestGasGrant(amountUsdc);
 
       // 3) Wait for both assets to settle on-chain.
-      setMessage('Confirming funds on Base…');
+      setMessage(t('Confirming funds on Base…'));
       const funded = await waitForFunds({ address, usdc, amountUsdc });
       if (!funded) {
         setDeclined(false);
         setStep('error');
         setMessage(
-          'Funds did not arrive in time. If your card payment went through, wait a moment and retry.',
+          t('Funds did not arrive in time. If your card payment went through, wait a moment and retry.'),
         );
         return;
       }
 
       setStep('success');
-      setMessage('Funds received — finishing your mission…');
+      setMessage(t('Funds received — finishing your mission…'));
       setTimeout(onFunded, 900);
     } catch (err) {
       setDeclined(false);
       setStep('error');
-      setMessage(err instanceof Error ? err.message : 'Payment failed. Please try again.');
+      setMessage(err instanceof Error ? err.message : t('Payment failed. Please try again.'));
     }
   };
 
@@ -118,6 +120,7 @@ export function OnrampModal({
 
   const inputClass =
     'w-full px-3 py-2.5 rounded-lg border border-indigo-200 bg-white text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#4B3EEF] focus:border-transparent';
+  const amount = amountUsdc.toFixed(2);
 
   return (
     <AnimatePresence>
@@ -143,8 +146,8 @@ export function OnrampModal({
                   <CreditCard className="h-5 w-5 text-white" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-[#1A1B25]">Pay by card</h3>
-                  <p className="text-xs text-gray-500">Fund your mission with USDC on Base</p>
+                  <h3 className="text-lg font-bold text-[#1A1B25]">{t('Pay by card')}</h3>
+                  <p className="text-xs text-gray-500">{t('Fund your mission with USDC on Base')}</p>
                 </div>
               </div>
               {step !== 'processing' && (
@@ -152,7 +155,7 @@ export function OnrampModal({
                   type="button"
                   onClick={handleClose}
                   className="text-gray-400 hover:text-gray-700 transition-colors"
-                  aria-label="Close"
+                  aria-label={t('Close')}
                 >
                   <X className="h-5 w-5" />
                 </button>
@@ -164,15 +167,15 @@ export function OnrampModal({
               {/* Amount summary */}
               <div className="rounded-xl bg-gradient-to-br from-indigo-50/80 to-[#4B3EEF]/5 border border-indigo-200 p-4 mb-5">
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">You pay</span>
-                  <span className="text-xl font-bold text-[#1A1B25]">${amountUsdc.toFixed(2)}</span>
+                  <span className="text-sm text-gray-600">{t('You pay')}</span>
+                  <span className="text-xl font-bold text-[#1A1B25]">${amount}</span>
                 </div>
                 <div className="mt-2 flex justify-between items-center text-xs text-gray-500">
                   <span className="inline-flex items-center gap-1">
-                    <ShieldCheck className="h-3.5 w-3.5 text-green-600" /> {amountUsdc.toFixed(2)} USDC to your wallet
+                    <ShieldCheck className="h-3.5 w-3.5 text-green-600" /> {t('{{amount}} USDC to your wallet', { amount })}
                   </span>
                   <span className="inline-flex items-center gap-1">
-                    <Fuel className="h-3.5 w-3.5 text-[#4B3EEF]" /> gas covered
+                    <Fuel className="h-3.5 w-3.5 text-[#4B3EEF]" /> {t('gas covered')}
                   </span>
                 </div>
               </div>
@@ -181,13 +184,14 @@ export function OnrampModal({
                 <>
                   {isCoinbase ? (
                     <p className="text-sm text-gray-600">
-                      You'll complete your card payment securely with Coinbase. The USDC
-                      lands directly in your wallet — we cover the network gas.
+                      {t(
+                        "You'll complete your card payment securely with Coinbase. The USDC lands directly in your wallet — we cover the network gas.",
+                      )}
                     </p>
                   ) : (
                     <div className="space-y-3">
                       <div>
-                        <label className="block text-xs font-medium text-gray-600 mb-1">Card number</label>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">{t('Card number')}</label>
                         <input
                           type="text"
                           inputMode="numeric"
@@ -199,7 +203,7 @@ export function OnrampModal({
                       </div>
                       <div className="grid grid-cols-2 gap-3">
                         <div>
-                          <label className="block text-xs font-medium text-gray-600 mb-1">Expiry</label>
+                          <label className="block text-xs font-medium text-gray-600 mb-1">{t('Expiry')}</label>
                           <input
                             type="text"
                             inputMode="numeric"
@@ -210,7 +214,7 @@ export function OnrampModal({
                           />
                         </div>
                         <div>
-                          <label className="block text-xs font-medium text-gray-600 mb-1">CVC</label>
+                          <label className="block text-xs font-medium text-gray-600 mb-1">{t('CVC')}</label>
                           <input
                             type="text"
                             inputMode="numeric"
@@ -230,7 +234,7 @@ export function OnrampModal({
                     className="mt-5 w-full font-bold py-3.5 px-6 rounded-xl shadow-lg flex items-center justify-center gap-2 bg-gradient-to-r from-[#4B3EEF] to-[#3D32D9] text-white hover:shadow-xl hover:scale-[1.02] transition-all"
                   >
                     <CreditCard className="h-5 w-5" />
-                    {isCoinbase ? 'Continue to Coinbase' : `Pay $${amountUsdc.toFixed(2)}`}
+                    {isCoinbase ? t('Continue to Coinbase') : t('Pay ${{amount}}', { amount })}
                   </button>
                 </>
               )}
@@ -239,7 +243,7 @@ export function OnrampModal({
                 <div className="py-8 flex flex-col items-center text-center">
                   <Loader2 className="h-10 w-10 text-[#4B3EEF] animate-spin mb-4" />
                   <p className="text-sm text-gray-700 font-medium">{message}</p>
-                  <p className="text-xs text-gray-400 mt-2">Please keep this window open.</p>
+                  <p className="text-xs text-gray-400 mt-2">{t('Please keep this window open.')}</p>
                 </div>
               )}
 
@@ -259,14 +263,14 @@ export function OnrampModal({
                         href={`mailto:${contactEmail ?? 'access@taskfi.xyz'}?subject=${encodeURIComponent('Card payment — access request')}&body=${encodeURIComponent(`My card was declined for a TaskFi mission. Please enable card payments for my company.\nWallet: ${address ?? ''}`)}`}
                         className="w-full font-bold py-3 px-6 rounded-xl flex items-center justify-center gap-2 bg-gradient-to-r from-[#4B3EEF] to-[#3D32D9] text-white hover:shadow-lg transition-all"
                       >
-                        <Mail className="h-5 w-5" /> Contact the team
+                        <Mail className="h-5 w-5" /> {t('Contact the team')}
                       </a>
                       <button
                         type="button"
                         onClick={handleClose}
                         className="mt-3 text-sm text-gray-500 hover:text-gray-700 transition-colors"
                       >
-                        Close
+                        {t('Close')}
                       </button>
                     </>
                   ) : (
@@ -275,7 +279,7 @@ export function OnrampModal({
                       onClick={runPurchase}
                       className="w-full font-bold py-3 px-6 rounded-xl bg-gradient-to-r from-[#4B3EEF] to-[#3D32D9] text-white hover:shadow-lg transition-all"
                     >
-                      Try again
+                      {t('Try again')}
                     </button>
                   )}
                 </div>

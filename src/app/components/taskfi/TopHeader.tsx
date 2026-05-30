@@ -1,12 +1,15 @@
 import { Search, Wallet, Bot, Copy, Check, Lock } from 'lucide-react';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useWallet } from '../../../lib/wallet-context';
 import { useAgents } from '../../contexts/AgentsContext';
 import { isMainnet } from '../../../lib/chain';
 import { showSuccess, showError } from '../../../lib/toast';
+import { LanguageSwitcher } from './LanguageSwitcher';
 import taskfiLogo from '@/imports/logo_taskfi.png';
 
 export function TopHeader() {
+  const { t } = useTranslation();
   const { address, lock } = useWallet();
   const { agents } = useAgents();
   const [justCopied, setJustCopied] = useState(false);
@@ -21,7 +24,7 @@ export function TopHeader() {
     try {
       await navigator.clipboard.writeText(address);
       setJustCopied(true);
-      showSuccess('Wallet address copied');
+      showSuccess(t('Wallet address copied'));
       window.setTimeout(() => setJustCopied(false), 1500);
     } catch {
       showError('Could not copy — paste manually: ' + address);
@@ -42,7 +45,7 @@ export function TopHeader() {
             <Search className="absolute left-3 md:left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-indigo-400" />
             <input
               type="text"
-              placeholder="Search missions..."
+              placeholder={t('Search missions...')}
               className="w-full rounded-xl border border-indigo-200/50 bg-white/80 backdrop-blur-sm py-2 md:py-3 pl-9 md:pl-11 pr-3 md:pr-4 text-sm outline-none transition-all focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100"
             />
           </div>
@@ -50,14 +53,16 @@ export function TopHeader() {
 
         {/* Right Section */}
         <div className="flex items-center gap-2 md:gap-4">
+          <LanguageSwitcher />
+
           {/* Active Agents - Hidden on mobile */}
           <div className="hidden md:flex items-center gap-3 rounded-xl border border-indigo-200/50 bg-white/80 backdrop-blur-sm px-4 py-2">
             <Bot className="h-4 w-4 text-indigo-600" />
             <div>
-              <p className="text-xs text-gray-500">Active Agents</p>
+              <p className="text-xs text-gray-500">{t('Active Agents')}</p>
               <p className="text-sm font-bold text-[#1A1B25]">{agents.length}</p>
             </div>
-            <span className="text-xs font-semibold text-green-600">Live</span>
+            <span className="text-xs font-semibold text-green-600">{t('Live')}</span>
           </div>
 
           {/* Wallet — click to copy the connected address */}
@@ -84,7 +89,7 @@ export function TopHeader() {
           {/* Lock — dedicated button so the wallet copy button isn't destructive */}
           <button
             onClick={lock}
-            title="Lock wallet"
+            title={t('Lock wallet')}
             className="flex items-center justify-center rounded-xl border border-indigo-200/50 bg-white/80 backdrop-blur-sm p-2 md:p-3 text-indigo-700 hover:bg-white hover:border-indigo-300 transition-all"
           >
             <Lock className="h-4 w-4" />

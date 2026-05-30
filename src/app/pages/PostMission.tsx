@@ -1,4 +1,4 @@
-import { Target, FileText, DollarSign, Shield, Upload, Lock, User, Building2, CheckCircle, X, ExternalLink, CreditCard } from 'lucide-react';
+import { Target, FileText, DollarSign, Shield, Upload, Lock, User, Building2, CheckCircle, X, ExternalLink, CreditCard, Wallet } from 'lucide-react';
 import { useState, useMemo, useRef } from 'react';
 import { motion } from 'motion/react';
 import { useMissions } from '../contexts/MissionsContext';
@@ -621,15 +621,18 @@ export function PostMission() {
             </span>
           </motion.button>
 
-          {/* Secondary path for users who already hold USDC (skip the card). */}
+          {/* Secondary path for users who already hold USDC (skip the card).
+              Styled in the brand violet as an outline button to contrast with
+              the filled-gradient primary card CTA. */}
           {ONRAMP_ENABLED && progress === 'idle' && (
             <button
               type="button"
               onClick={() => handleSubmit(false)}
               disabled={isSubmitting || bountyAmount < 1}
-              className="mt-3 w-full text-sm text-gray-500 hover:text-indigo-600 transition-colors disabled:opacity-50"
+              className="mt-3 w-full font-bold py-4 px-6 rounded-xl border-2 border-[#4B3EEF] text-[#4B3EEF] bg-white/70 hover:bg-[#4B3EEF]/10 hover:shadow-md transition-all duration-300 flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              I already have USDC — pay from my wallet
+              <Wallet className="h-5 w-5" />
+              Pay with USDC from my wallet
             </button>
           )}
 

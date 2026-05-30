@@ -1,12 +1,14 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { CreditCard, X, CheckCircle, ShieldCheck, Loader2, Fuel } from 'lucide-react';
+import { CreditCard, X, CheckCircle, ShieldCheck, Loader2, Fuel, ShieldAlert, Mail } from 'lucide-react';
 import type { Address } from 'viem';
 import {
   ONRAMP_PROVIDER,
   requestGasGrant,
   openCoinbaseOnramp,
   waitForFunds,
+  checkOnrampEligibility,
+  type OnrampEligibility,
 } from '../../../lib/onramp';
 
 type ModalStep = 'form' | 'processing' | 'success' | 'error';
@@ -41,8 +43,30 @@ export function OnrampModal({
 }: OnrampModalProps) {
   const [step, setStep] = useState<ModalStep>('form');
   const [message, setMessage] = useState('');
+  const [eligibility, setEligibility] = useState<OnrampEligibility | null>(null);
 
   const isCoinbase = ONRAMP_PROVIDER === 'coinbase';
+
+  // On open, reset state and check whether this company (wallet) is whitelisted
+  // to pay by card. Non-whitelisted companies see a request-access message.
+  useEffect(() => {
+    if (!open) return;
+    setStep('form');
+    setMessage('');
+    setEligibility(null);
+    if (!address) return;
+    let cancelled = false;
+    checkOnrampEligibility(address).then((e) => {
+      if (!cancelled) setEligibility(e);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [open, address]);
+
+  const checking = step === 'form' && eligibility === null;
+  const notWhitelisted = step === 'form' && eligibility !== null && !eligibility.whitelisted;
+  const showAmount = !checking && !notWhitelisted;
 
   const runPurchase = async () => {
     if (!address || !usdc) {
@@ -135,25 +159,61 @@ export function OnrampModal({
 
             {/* Body */}
             <div className="p-5">
-              {/* Amount summary (always visible) */}
-              <div className="rounded-xl bg-gradient-to-br from-indigo-50/80 to-[#4B3EEF]/5 border border-indigo-200 p-4 mb-5">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">You pay</span>
-                  <span className="text-xl font-bold text-[#1A1B25]">
-                    ${amountUsdc.toFixed(2)}
-                  </span>
+              {/* Eligibility gate: checking → loading; not whitelisted → message. */}
+              {checking && (
+                <div className="py-8 flex flex-col items-center text-center">
+                  <Loader2 className="h-8 w-8 text-[#4B3EEF] animate-spin mb-3" />
+                  <p className="text-sm text-gray-600">Checking access…</p>
                 </div>
-                <div className="mt-2 flex justify-between items-center text-xs text-gray-500">
-                  <span className="inline-flex items-center gap-1">
-                    <ShieldCheck className="h-3.5 w-3.5 text-green-600" /> {amountUsdc.toFixed(2)} USDC to your wallet
-                  </span>
-                  <span className="inline-flex items-center gap-1">
-                    <Fuel className="h-3.5 w-3.5 text-[#4B3EEF]" /> gas covered
-                  </span>
-                </div>
-              </div>
+              )}
 
-              {step === 'form' && (
+              {notWhitelisted && (
+                <div className="py-4 flex flex-col items-center text-center">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#4B3EEF]/10 mb-4">
+                    <ShieldAlert className="h-6 w-6 text-[#4B3EEF]" />
+                  </div>
+                  <h4 className="text-base font-bold text-[#1A1B25] mb-1">Card payment requires approval</h4>
+                  <p className="text-sm text-gray-600 mb-5">
+                    Paying by card is reserved for verified enterprises. Your company isn't
+                    whitelisted yet — request access and we'll review it.
+                  </p>
+                  <a
+                    href={`mailto:${eligibility?.requestAccessEmail ?? 'access@taskfi.xyz'}?subject=${encodeURIComponent('Card payment access request')}&body=${encodeURIComponent(`Please whitelist my company for card payments.\nWallet: ${address ?? ''}`)}`}
+                    className="w-full font-bold py-3.5 px-6 rounded-xl flex items-center justify-center gap-2 bg-gradient-to-r from-[#4B3EEF] to-[#3D32D9] text-white hover:shadow-lg transition-all"
+                  >
+                    <Mail className="h-5 w-5" /> Request access
+                  </a>
+                  <button
+                    type="button"
+                    onClick={handleClose}
+                    className="mt-3 text-sm text-gray-500 hover:text-gray-700 transition-colors"
+                  >
+                    Maybe later
+                  </button>
+                </div>
+              )}
+
+              {/* Amount summary (shown once eligible / during processing). */}
+              {showAmount && (
+                <div className="rounded-xl bg-gradient-to-br from-indigo-50/80 to-[#4B3EEF]/5 border border-indigo-200 p-4 mb-5">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-600">You pay</span>
+                    <span className="text-xl font-bold text-[#1A1B25]">
+                      ${amountUsdc.toFixed(2)}
+                    </span>
+                  </div>
+                  <div className="mt-2 flex justify-between items-center text-xs text-gray-500">
+                    <span className="inline-flex items-center gap-1">
+                      <ShieldCheck className="h-3.5 w-3.5 text-green-600" /> {amountUsdc.toFixed(2)} USDC to your wallet
+                    </span>
+                    <span className="inline-flex items-center gap-1">
+                      <Fuel className="h-3.5 w-3.5 text-[#4B3EEF]" /> gas covered
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {step === 'form' && eligibility?.whitelisted && (
                 <>
                   {isCoinbase ? (
                     <div className="space-y-4">

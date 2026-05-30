@@ -182,6 +182,11 @@ export const api = {
   },
 
   onramp: {
+    // Public: whether a company (wallet) is whitelisted to pay by card.
+    eligibility: (address: string) =>
+      request<{ whitelisted: boolean; requestAccessEmail: string | null }>(
+        `/api/onramp/eligibility?address=${address}`,
+      ),
     // Project gas dispenser: tops up the caller's wallet with a little ETH for
     // gas (and, in dev, test USDC). Idempotent server-side. Requires SIWE auth.
     gasGrant: (body?: { usdcAmount?: string }) =>

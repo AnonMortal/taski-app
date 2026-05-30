@@ -43,6 +43,24 @@ export async function requestGasGrant(usdcAmount?: number): Promise<void> {
   );
 }
 
+export interface OnrampEligibility {
+  whitelisted: boolean;
+  requestAccessEmail: string | null;
+}
+
+/**
+ * Whether a company (wallet) is whitelisted to pay by card. Card payment is
+ * gated to approved enterprises; non-whitelisted wallets see a request-access
+ * message instead of the card form.
+ */
+export async function checkOnrampEligibility(address: Address): Promise<OnrampEligibility> {
+  try {
+    return await api.onramp.eligibility(address);
+  } catch {
+    return { whitelisted: false, requestAccessEmail: null };
+  }
+}
+
 export interface FundsTarget {
   address: Address;
   usdc: Address;

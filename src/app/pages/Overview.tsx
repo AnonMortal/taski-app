@@ -32,18 +32,20 @@
  * - TokenBurnCard: Burn metrics card
  */
 
+import { useTranslation } from 'react-i18next';
 import { EarningsCard } from '../components/taskfi/EarningsCard';
 import { MissionsTable } from '../components/taskfi/MissionsTable';
 import { TotalStakedCard } from '../components/taskfi/TotalStakedCard';
 import { TokenBurnCard } from '../components/taskfi/TokenBurnCard';
 
 export function Overview() {
+  const { t } = useTranslation();
   return (
     <main className="flex-1 overflow-y-auto p-4 md:p-8">
       {/* Page Title */}
       <div className="mb-6 md:mb-8">
-        <h2 className="text-2xl md:text-3xl font-bold text-[#1A1B25] mb-1">Overview</h2>
-        <p className="text-sm text-gray-600">Welcome back! Here's your protocol overview.</p>
+        <h2 className="text-2xl md:text-3xl font-bold text-[#1A1B25] mb-1">{t('Overview')}</h2>
+        <p className="text-sm text-gray-600">{t("Welcome back! Here's your protocol overview.")}</p>
       </div>
 
       {/* Active Missions Table - Full width first */}

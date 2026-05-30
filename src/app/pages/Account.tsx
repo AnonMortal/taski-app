@@ -1,5 +1,6 @@
 import { User, Wallet, Shield, Bell, Globe, Save, Check, LogOut, CreditCard } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { Address } from 'viem';
 import { useWallet } from '../../lib/wallet-context';
 import { api, getAuthToken } from '../../lib/api';
@@ -38,11 +39,12 @@ function formatPendingUsdc(raw: string | null): string {
 }
 
 export function Account() {
+  const { t } = useTranslation();
   const { address, lock, signMessage } = useWallet();
   const { config } = useRuntimeConfig();
   const shortAddress = address
     ? `${address.slice(0, 6)}...${address.slice(-4)}`
-    : 'Not connected';
+    : t('Not connected');
 
   const profileKey = address ? `${PROFILE_KEY_PREFIX}${address.toLowerCase()}` : null;
   const notifKey = address ? `${NOTIF_KEY_PREFIX}${address.toLowerCase()}` : null;
@@ -139,7 +141,7 @@ export function Account() {
     try {
       localStorage.setItem(profileKey, JSON.stringify(profile));
       setSaved(true);
-      showSuccess('Profile saved locally');
+      showSuccess(t('Profile saved locally'));
       setTimeout(() => setSaved(false), 2000);
     } catch {
       // ignore
@@ -155,8 +157,8 @@ export function Account() {
             <User className="h-6 w-6 text-white" />
           </div>
           <div>
-            <h2 className="text-2xl md:text-3xl font-bold text-[#1A1B25]">My Account</h2>
-            <p className="text-sm text-gray-600">Manage your profile and preferences</p>
+            <h2 className="text-2xl md:text-3xl font-bold text-[#1A1B25]">{t('My Account')}</h2>
+            <p className="text-sm text-gray-600">{t('Manage your profile and preferences')}</p>
           </div>
         </div>
       </div>
@@ -165,27 +167,27 @@ export function Account() {
       <div className="mb-8">
         <h3 className="text-lg font-bold text-[#1A1B25] mb-4 flex items-center gap-2">
           <User className="h-5 w-5 text-indigo-600" />
-          Profile Information
+          {t('Profile Information')}
         </h3>
         <div className="rounded-xl border border-indigo-200/40 bg-white/80 backdrop-blur-md p-6 shadow-lg">
           <p className="text-xs text-gray-500 mb-4">
-            Stored locally in this browser, tied to the connected wallet address.
+            {t('Stored locally in this browser, tied to the connected wallet address.')}
           </p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Display Name</label>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">{t('Display Name')}</label>
               <input
                 type="text"
                 value={profile.displayName}
                 onChange={(e) => setProfile({ ...profile, displayName: e.target.value })}
-                placeholder="Your display name"
+                placeholder={t('Your display name')}
                 disabled={!address}
                 className="w-full px-4 py-2.5 rounded-lg border border-indigo-200 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all disabled:bg-gray-50 disabled:text-gray-400"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Email</label>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">{t('Email')}</label>
               <input
                 type="email"
                 value={profile.email}
@@ -197,12 +199,12 @@ export function Account() {
             </div>
 
             <div className="md:col-span-2">
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Bio</label>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">{t('Bio')}</label>
               <textarea
                 rows={4}
                 value={profile.bio}
                 onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
-                placeholder="Tell people about your work…"
+                placeholder={t('Tell people about your work…')}
                 disabled={!address}
                 className="w-full px-4 py-2.5 rounded-lg border border-indigo-200 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all resize-none disabled:bg-gray-50 disabled:text-gray-400"
               />
@@ -215,7 +217,7 @@ export function Account() {
             className="mt-6 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold py-2.5 px-6 rounded-lg shadow-md hover:shadow-lg hover:scale-[1.02] transition-all duration-300 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
           >
             {saved ? <Check className="h-4 w-4" /> : <Save className="h-4 w-4" />}
-            {saved ? 'Saved' : 'Save Changes'}
+            {saved ? t('Saved') : t('Save Changes')}
           </button>
         </div>
       </div>
@@ -224,12 +226,12 @@ export function Account() {
       <div className="mb-8">
         <h3 className="text-lg font-bold text-[#1A1B25] mb-4 flex items-center gap-2">
           <Wallet className="h-5 w-5 text-indigo-600" />
-          Wallet & Blockchain
+          {t('Wallet & Blockchain')}
         </h3>
         <div className="rounded-xl border border-indigo-200/40 bg-white/80 backdrop-blur-md p-6 shadow-lg">
           {/* Connected Wallet */}
           <div className="mb-6">
-            <label className="block text-sm font-semibold text-gray-700 mb-3">Connected Wallet</label>
+            <label className="block text-sm font-semibold text-gray-700 mb-3">{t('Connected Wallet')}</label>
             <div className="flex items-center justify-between p-4 rounded-lg bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200">
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-green-600">
@@ -237,37 +239,37 @@ export function Account() {
                 </div>
                 <div>
                   <p className="text-sm font-bold text-[#1A1B25] font-mono">{shortAddress}</p>
-                  <p className="text-xs text-gray-600">Base Network</p>
+                  <p className="text-xs text-gray-600">{t('Base Network')}</p>
                 </div>
               </div>
               <span className="px-3 py-1.5 rounded-full bg-green-600 text-white text-xs font-bold">
-                {address ? 'Connected' : 'Locked'}
+                {address ? t('Connected') : t('Locked')}
               </span>
             </div>
           </div>
 
           {/* Balances + pending earnings */}
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-3">Token Balances</label>
+            <label className="block text-sm font-semibold text-gray-700 mb-3">{t('Token Balances')}</label>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <div className="p-4 rounded-lg bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200">
                 <p className="text-xs text-gray-600 mb-1">USDC</p>
                 <p className="text-2xl font-bold text-green-700">{formatUsdcBalance(onChainBalances.usdc)}</p>
                 <p className="text-xs text-gray-500 mt-1">
-                  {chainReadsEnabled ? 'On-chain balance' : 'RPC not configured'}
+                  {chainReadsEnabled ? t('On-chain balance') : t('RPC not configured')}
                 </p>
               </div>
               <div className="p-4 rounded-lg bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200">
                 <p className="text-xs text-gray-600 mb-1">$TASK</p>
                 <p className="text-2xl font-bold text-indigo-700">{formatTask(onChainBalances.task)}</p>
                 <p className="text-xs text-gray-500 mt-1">
-                  {chainReadsEnabled ? 'On-chain balance' : 'RPC not configured'}
+                  {chainReadsEnabled ? t('On-chain balance') : t('RPC not configured')}
                 </p>
               </div>
               <div className="p-4 rounded-lg bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200">
-                <p className="text-xs text-gray-600 mb-1">Pending USDC</p>
+                <p className="text-xs text-gray-600 mb-1">{t('Pending USDC')}</p>
                 <p className="text-2xl font-bold text-amber-700">{formatPendingUsdc(pendingEarnings)}</p>
-                <p className="text-xs text-gray-500 mt-1">In escrow, claim from Staking &amp; Rewards.</p>
+                <p className="text-xs text-gray-500 mt-1">{t('In escrow, claim from Staking & Rewards.')}</p>
               </div>
             </div>
 
@@ -276,7 +278,7 @@ export function Account() {
               <div className="mt-4 flex flex-col sm:flex-row sm:items-end gap-3">
                 <div>
                   <label htmlFor="topup-amount" className="block text-xs font-medium text-gray-600 mb-1">
-                    Amount (USDC)
+                    {t('Amount (USDC)')}
                   </label>
                   <input
                     id="topup-amount"
@@ -295,7 +297,7 @@ export function Account() {
                   disabled={!address || topUpAmount < 1}
                   className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-gradient-to-r from-[#4B3EEF] to-[#3D32D9] text-white text-sm font-semibold hover:shadow-lg hover:scale-[1.02] transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                 >
-                  <CreditCard className="h-4 w-4" /> Add funds (buy USDC)
+                  <CreditCard className="h-4 w-4" /> {t('Add funds (buy USDC)')}
                 </button>
               </div>
             )}
@@ -307,11 +309,11 @@ export function Account() {
       <div className="mb-8">
         <h3 className="text-lg font-bold text-[#1A1B25] mb-4 flex items-center gap-2">
           <Bell className="h-5 w-5 text-indigo-600" />
-          Notification Preferences
+          {t('Notification Preferences')}
         </h3>
         <div className="rounded-xl border border-indigo-200/40 bg-white/80 backdrop-blur-md p-6 shadow-lg">
           <p className="text-xs text-gray-500 mb-3">
-            Toggles are stored locally; in-app notifications honor them right away.
+            {t('Toggles are stored locally; in-app notifications honor them right away.')}
           </p>
           <div className="space-y-4">
             {[
@@ -328,8 +330,8 @@ export function Account() {
                   className="flex items-center justify-between p-4 rounded-lg hover:bg-indigo-50/50 transition-colors"
                 >
                   <div>
-                    <p className="font-semibold text-[#1A1B25]">{item.title}</p>
-                    <p className="text-sm text-gray-600">{item.desc}</p>
+                    <p className="font-semibold text-[#1A1B25]">{t(item.title)}</p>
+                    <p className="text-sm text-gray-600">{t(item.desc)}</p>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
                     <input
@@ -351,7 +353,7 @@ export function Account() {
       <div className="mb-8">
         <h3 className="text-lg font-bold text-[#1A1B25] mb-4 flex items-center gap-2">
           <Shield className="h-5 w-5 text-indigo-600" />
-          Security
+          {t('Security')}
         </h3>
         <div className="rounded-xl border border-indigo-200/40 bg-white/80 backdrop-blur-md p-6 shadow-lg">
           <div className="space-y-4">
@@ -359,11 +361,11 @@ export function Account() {
               <div className="flex items-start gap-3">
                 <Globe className="h-5 w-5 text-indigo-600 mt-0.5" />
                 <div>
-                  <p className="font-semibold text-[#1A1B25] mb-1">Embedded Wallet</p>
+                  <p className="font-semibold text-[#1A1B25] mb-1">{t('Embedded Wallet')}</p>
                   <p className="text-sm text-gray-600 mb-2">
-                    Your private key is encrypted in this browser with your password. Anyone with access to this device and the password can sign as you.
+                    {t('Your private key is encrypted in this browser with your password. Anyone with access to this device and the password can sign as you.')}
                   </p>
-                  <p className="text-xs text-gray-500">Auto-locks after 15 minutes of inactivity.</p>
+                  <p className="text-xs text-gray-500">{t('Auto-locks after 15 minutes of inactivity.')}</p>
                 </div>
               </div>
             </div>
@@ -372,9 +374,9 @@ export function Account() {
               <div className="flex items-start gap-3">
                 <Shield className="h-5 w-5 text-amber-600 mt-0.5" />
                 <div className="flex-1">
-                  <p className="font-semibold text-[#1A1B25] mb-1">Lock now</p>
+                  <p className="font-semibold text-[#1A1B25] mb-1">{t('Lock now')}</p>
                   <p className="text-sm text-gray-600 mb-3">
-                    Sign out and re-encrypt the wallet. You'll need your password to unlock again.
+                    {t("Sign out and re-encrypt the wallet. You'll need your password to unlock again.")}
                   </p>
                   <button
                     onClick={lock}
@@ -382,7 +384,7 @@ export function Account() {
                     className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-amber-600 text-white text-sm font-semibold hover:bg-amber-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <LogOut className="h-4 w-4" />
-                    Lock Wallet
+                    {t('Lock Wallet')}
                   </button>
                 </div>
               </div>
@@ -401,7 +403,7 @@ export function Account() {
           onFunded={() => {
             setOnrampOpen(false);
             setBalanceNonce((n) => n + 1);
-            showSuccess('Funds added to your wallet');
+            showSuccess(t('Funds added to your wallet'));
           }}
           onClose={() => setOnrampOpen(false)}
         />

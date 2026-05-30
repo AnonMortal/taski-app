@@ -1,6 +1,9 @@
 import { Flame, TrendingDown, Activity } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useMissions } from '../../contexts/MissionsContext';
 import { usePublicStats } from '../../hooks/usePublicStats';
+
+type TFunction = (key: string, options?: Record<string, unknown>) => string;
 
 interface ProtocolEvent {
   id: string;
@@ -18,18 +21,19 @@ function compact(n: number): string {
   return n.toLocaleString('en-US');
 }
 
-function relativeTime(date: Date): string {
+function relativeTime(date: Date, t: TFunction): string {
   const diff = Date.now() - date.getTime();
   const mins = Math.floor(diff / 60000);
-  if (mins < 1) return 'just now';
-  if (mins < 60) return `${mins} min ago`;
+  if (mins < 1) return t('just now');
+  if (mins < 60) return t('{{count}} min ago', { count: mins });
   const hours = Math.floor(mins / 60);
-  if (hours < 24) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+  if (hours < 24) return t('{{count}} hour ago', { count: hours });
   const days = Math.floor(hours / 24);
-  return `${days} day${days > 1 ? 's' : ''} ago`;
+  return t('{{count}} day ago', { count: days });
 }
 
 export function ProtocolHealth() {
+  const { t } = useTranslation();
   const { stats, loading: statsLoading } = usePublicStats();
   const { missions } = useMissions();
 
@@ -44,10 +48,10 @@ export function ProtocolHealth() {
     .map((m): ProtocolEvent => ({
       id: `m-${m.id}`,
       type: 'completion',
-      title: 'Mission Settled',
-      description: `"${m.title}" payout settled — protocol fee collected`,
+      title: t('Mission Settled'),
+      description: t('"{{title}}" payout settled — protocol fee collected', { title: m.title }),
       amount: `${m.bountyAmount.toLocaleString()} USDC`,
-      timestamp: relativeTime(m.timestamp),
+      timestamp: relativeTime(m.timestamp, t),
     }));
 
   const totalBurned = statsLoading ? '—' : `${compact(stats.totalBurned)} $TASK`;
@@ -58,11 +62,11 @@ export function ProtocolHealth() {
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <Activity className="h-5 w-5 text-indigo-600" />
-          <h3 className="text-sm font-semibold text-[#1A1B25]">Protocol Health</h3>
+          <h3 className="text-sm font-semibold text-[#1A1B25]">{t('Protocol Health')}</h3>
         </div>
         <div className="flex items-center gap-1 text-xs font-semibold text-green-600">
           <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-          <span>Live</span>
+          <span>{t('Live')}</span>
         </div>
       </div>
 
@@ -71,7 +75,7 @@ export function ProtocolHealth() {
         <div className="rounded-lg bg-gradient-to-br from-[#4B3EEF]/10 to-transparent border border-[#4B3EEF]/30 p-3">
           <div className="flex items-center gap-2 mb-1">
             <Flame className="h-3 w-3 text-[#4B3EEF]" />
-            <span className="text-xs text-gray-600">Total Burned</span>
+            <span className="text-xs text-gray-600">{t('Total Burned')}</span>
           </div>
           <p className="text-sm font-bold text-[#4B3EEF]">{totalBurned}</p>
         </div>
@@ -79,7 +83,7 @@ export function ProtocolHealth() {
         <div className="rounded-lg bg-gradient-to-br from-red-50 to-transparent border border-red-200/50 p-3">
           <div className="flex items-center gap-2 mb-1">
             <TrendingDown className="h-3 w-3 text-red-600" />
-            <span className="text-xs text-gray-600">Total Volume</span>
+            <span className="text-xs text-gray-600">{t('Total Volume')}</span>
           </div>
           <p className="text-sm font-bold text-red-700">{totalVolume}</p>
         </div>
@@ -89,7 +93,7 @@ export function ProtocolHealth() {
       <div className="space-y-2 max-h-80 overflow-y-auto pr-2">
         {events.length === 0 && (
           <p className="text-xs text-gray-400 py-6 text-center">
-            No settled missions yet — protocol events will appear here.
+            {t('No settled missions yet — protocol events will appear here.')}
           </p>
         )}
         {events.map((event, index) => (

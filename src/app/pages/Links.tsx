@@ -1,5 +1,6 @@
 import { Link2, Twitter, FileText, Globe, Book, Users, Copy, Check } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { api } from '../../lib/api';
 import { showSuccess } from '../../lib/toast';
 
@@ -32,6 +33,7 @@ function shortAddress(address: string | null | undefined): string {
 }
 
 export function Links() {
+  const { t } = useTranslation();
   const [config, setConfig] = useState<ChainConfig | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
 
@@ -53,13 +55,18 @@ export function Links() {
   const copy = (label: string, value: string) => {
     navigator.clipboard.writeText(value).then(() => {
       setCopied(label);
-      showSuccess(`${label} copied`);
+      showSuccess(t('{{label}} copied', { label }));
       setTimeout(() => setCopied(null), 1500);
     });
   };
 
   const chainId = config?.chainId ?? 84532;
-  const networkLabel = chainId === 84532 ? 'Base Sepolia (testnet)' : chainId === 8453 ? 'Base Mainnet' : `Chain ${chainId}`;
+  const networkLabel =
+    chainId === 84532
+      ? t('Base Sepolia (testnet)')
+      : chainId === 8453
+        ? t('Base Mainnet')
+        : t('Chain {{chainId}}', { chainId });
 
   const contracts: { label: string; address: string | null | undefined }[] = [
     { label: '$TASK Token', address: config?.taskTokenAddress },
@@ -72,24 +79,24 @@ export function Links() {
 
   const linkCategories = [
     {
-      title: 'Official Resources',
+      title: t('Official Resources'),
       icon: Globe,
       color: 'from-indigo-600 to-purple-600',
       bgColor: 'from-indigo-50 to-purple-50',
       borderColor: 'border-indigo-200',
       links: [
-        { name: 'App', url: APP_URL, icon: Globe, description: 'Open the TaskFi dashboard' },
-        { name: 'Documentation', url: DOCS_URL, icon: Book, description: 'Technical docs and concepts' },
+        { name: t('App'), url: APP_URL, icon: Globe, description: t('Open the TaskFi dashboard') },
+        { name: t('Documentation'), url: DOCS_URL, icon: Book, description: t('Technical docs and concepts') },
       ],
     },
     {
-      title: 'Community',
+      title: t('Community'),
       icon: Users,
       color: 'from-blue-600 to-cyan-600',
       bgColor: 'from-blue-50 to-cyan-50',
       borderColor: 'border-blue-200',
       links: [
-        { name: 'X (Twitter)', url: 'https://x.com/TaskFi_xyz', icon: Twitter, description: 'Updates and announcements' },
+        { name: t('X (Twitter)'), url: 'https://x.com/TaskFi_xyz', icon: Twitter, description: t('Updates and announcements') },
       ],
     },
   ];
@@ -102,8 +109,8 @@ export function Links() {
             <Link2 className="h-6 w-6 text-white" />
           </div>
           <div>
-            <h2 className="text-2xl md:text-3xl font-bold text-[#1A1B25]">Important Links</h2>
-            <p className="text-sm text-gray-600">App, docs, contracts and community</p>
+            <h2 className="text-2xl md:text-3xl font-bold text-[#1A1B25]">{t('Important Links')}</h2>
+            <p className="text-sm text-gray-600">{t('App, docs, contracts and community')}</p>
           </div>
         </div>
       </div>
@@ -143,7 +150,7 @@ export function Links() {
                         </div>
                       </div>
                       <div className="flex items-center gap-2 text-xs font-semibold text-indigo-600 group-hover:text-indigo-700 transition-colors">
-                        <span>Visit</span>
+                        <span>{t('Visit')}</span>
                         <svg className="h-3 w-3 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                         </svg>
@@ -160,11 +167,11 @@ export function Links() {
       <div className="mt-8">
         <h3 className="text-lg font-bold text-[#1A1B25] mb-4 flex items-center gap-2">
           <FileText className="h-5 w-5 text-indigo-600" />
-          On-chain Contracts
+          {t('On-chain Contracts')}
         </h3>
         <div className="rounded-xl border border-indigo-200/40 bg-white/80 backdrop-blur-md p-6 shadow-lg">
           <div className="mb-4 flex items-center justify-between">
-            <p className="text-sm font-semibold text-gray-600">Network</p>
+            <p className="text-sm font-semibold text-gray-600">{t('Network')}</p>
             <p className="text-sm font-bold text-[#1A1B25]">{networkLabel}</p>
           </div>
           <div className="space-y-2">
@@ -177,7 +184,7 @@ export function Links() {
                 >
                   <div className="flex items-center gap-3">
                     <span className="text-sm font-semibold text-[#1A1B25] min-w-[140px]">{label}</span>
-                    <code className="text-xs font-mono text-gray-700 break-all">{address ?? 'not deployed'}</code>
+                    <code className="text-xs font-mono text-gray-700 break-all">{address ?? t('not deployed')}</code>
                   </div>
                   <div className="flex items-center gap-2">
                     {address && (
@@ -197,7 +204,7 @@ export function Links() {
                         rel="noopener noreferrer"
                         className="px-2.5 py-1 rounded-md bg-indigo-600 text-white text-xs font-semibold hover:bg-indigo-700 transition-colors"
                       >
-                        Explorer
+                        {t('Explorer')}
                       </a>
                     )}
                   </div>

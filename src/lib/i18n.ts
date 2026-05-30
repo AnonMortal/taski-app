@@ -1,5 +1,7 @@
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
+// Bulk translations produced by the i18n audit (one entry per wrapped string).
+import zhGenerated from './zh.generated.json';
 
 /**
  * Lightweight i18n: the translation KEY is the English string itself, so any
@@ -99,7 +101,7 @@ const stored =
 void i18n.use(initReactI18next).init({
   lng: stored,
   fallbackLng: 'en',
-  resources: { zh: { translation: zh } },
+  resources: { zh: { translation: { ...zh, ...(zhGenerated as Record<string, string>) } } },
   // The key IS the English text, so disable separators (strings contain ":", ".", etc.).
   keySeparator: false,
   nsSeparator: false,

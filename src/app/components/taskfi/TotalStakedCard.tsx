@@ -1,4 +1,5 @@
 import { Lock } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { usePublicStats } from '../../hooks/usePublicStats';
 
 // Compact formatter: 12 400 000 -> "12.4M".
@@ -9,6 +10,7 @@ function compact(n: number): string {
 }
 
 export function TotalStakedCard() {
+  const { t } = useTranslation();
   const { stats, loading } = usePublicStats();
 
   const staked = stats.totalStaked;
@@ -25,9 +27,9 @@ export function TotalStakedCard() {
         </div>
         <div>
           <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wide">
-            Total Staked
+            {t('Total Staked')}
           </h3>
-          <p className="text-xs text-gray-500">Current protocol staking</p>
+          <p className="text-xs text-gray-500">{t('Current protocol staking')}</p>
         </div>
       </div>
 
@@ -42,7 +44,7 @@ export function TotalStakedCard() {
 
       <div className="space-y-2">
         <div className="flex justify-between items-center text-sm">
-          <span className="text-gray-600">% of Supply Staked</span>
+          <span className="text-gray-600">{t('% of Supply Staked')}</span>
           <span className="font-bold text-indigo-600">
             {loading ? '—' : `${pctStaked.toFixed(1)}%`}
           </span>

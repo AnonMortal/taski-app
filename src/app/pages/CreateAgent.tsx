@@ -7,6 +7,7 @@ import { useWallet } from '../../lib/wallet-context';
 import { signInWithEthereum } from '../../lib/siwe';
 import { api, getAuthToken } from '../../lib/api';
 import { showError } from '../../lib/toast';
+import { useTranslation } from 'react-i18next';
 
 // ── Passport Card ──────────────────────────────────────────────────────────────
 function PassportCard({
@@ -24,8 +25,9 @@ function PassportCard({
   missionsCompleted: number;
   level: number;
 }) {
-  const levelLabel = level === 0 ? '0 — Recruit' : String(level);
-  const missionsLabel = missionsCompleted === 0 ? 'Awaiting first job' : 'Lifetime';
+  const { t } = useTranslation();
+  const levelLabel = level === 0 ? t('0 — Recruit') : String(level);
+  const missionsLabel = missionsCompleted === 0 ? t('Awaiting first job') : t('Lifetime');
   return (
     <div className="relative w-full max-w-sm mx-auto rounded-2xl overflow-hidden shadow-2xl border border-indigo-200">
       <div className="h-1.5 w-full bg-gradient-to-r from-[#4B3EEF] via-[#FF9E80] to-[#7C6FF7]" />
@@ -33,8 +35,8 @@ function PassportCard({
       <div className="bg-gradient-to-br from-[#1A1B25] to-[#2D2E45] px-6 pt-5 pb-4">
         <div className="flex items-start justify-between mb-4">
           <div>
-            <p className="text-[10px] font-bold text-[#7C6FF7] uppercase tracking-widest mb-1">TaskFi Protocol</p>
-            <h3 className="text-xl font-bold text-white leading-tight">{name || 'Unnamed Agent'}</h3>
+            <p className="text-[10px] font-bold text-[#7C6FF7] uppercase tracking-widest mb-1">{t('TaskFi Protocol')}</p>
+            <h3 className="text-xl font-bold text-white leading-tight">{name || t('Unnamed Agent')}</h3>
           </div>
           <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-[#4B3EEF] to-[#7C6FF7] shadow-lg">
             <Bot className="h-6 w-6 text-white" />
@@ -48,32 +50,32 @@ function PassportCard({
           </div>
           <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#FF9E80]/20 border border-[#FF9E80]/50">
             <Lock className="h-3 w-3 text-[#FF9E80]" />
-            <span className="text-[10px] font-bold text-[#FF9E80] uppercase tracking-wide">Locked · Soulbound</span>
+            <span className="text-[10px] font-bold text-[#FF9E80] uppercase tracking-wide">{t('Locked · Soulbound')}</span>
           </div>
         </div>
       </div>
 
       <div className="bg-[#F4F5FF] px-6 py-5">
-        <p className="text-[10px] font-bold text-[#4B3EEF] uppercase tracking-widest mb-3">On-chain Metadata</p>
+        <p className="text-[10px] font-bold text-[#4B3EEF] uppercase tracking-widest mb-3">{t('On-chain Metadata')}</p>
         <div className="grid grid-cols-2 gap-3 mb-4">
           <div className="rounded-xl bg-white border border-green-100 p-3">
-            <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-1">Trust Score</p>
+            <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-1">{t('Trust Score')}</p>
             <p className="text-2xl font-black text-green-600 leading-none">{trustScore}</p>
-            <p className="text-[10px] text-gray-400 mt-0.5">Grows with completed missions</p>
+            <p className="text-[10px] text-gray-400 mt-0.5">{t('Grows with completed missions')}</p>
           </div>
           <div className="rounded-xl bg-white border border-indigo-100 p-3">
-            <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-1">Total Missions</p>
+            <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-1">{t('Total Missions')}</p>
             <p className="text-2xl font-black text-[#4B3EEF] leading-none">{missionsCompleted}</p>
             <p className="text-[10px] text-gray-400 mt-0.5">{missionsLabel}</p>
           </div>
           <div className="rounded-xl bg-white border border-amber-100 p-3">
-            <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-1">Level</p>
+            <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-1">{t('Level')}</p>
             <p className="text-2xl font-black text-amber-600 leading-none">{levelLabel}</p>
-            <p className="text-[10px] text-gray-400 mt-0.5">Set by the Jury</p>
+            <p className="text-[10px] text-gray-400 mt-0.5">{t('Set by the Jury')}</p>
           </div>
           <div className="rounded-xl bg-white border border-violet-100 p-3">
-            <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-1">Primary Skill</p>
-            <p className="text-sm font-bold text-violet-700 leading-tight mt-1">{primarySkill || 'General'}</p>
+            <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-1">{t('Primary Skill')}</p>
+            <p className="text-sm font-bold text-violet-700 leading-tight mt-1">{primarySkill || t('General')}</p>
           </div>
         </div>
 
@@ -106,6 +108,7 @@ function MintModal({
   level: number;
   onGoToHub: () => void;
 }) {
+  const { t } = useTranslation();
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -164,9 +167,9 @@ await agent.identity.mintPassport({
                 </div>
               </div>
 
-              <h3 className="text-xl font-bold text-white mb-2">Minting ERC-5192 Agent Passport...</h3>
+              <h3 className="text-xl font-bold text-white mb-2">{t('Minting ERC-5192 Agent Passport...')}</h3>
               <p className="text-sm text-gray-400 leading-relaxed">
-                Securing webhook endpoint and anchoring<br />identity to <span className="text-[#4B3EEF] font-semibold">@Base</span>.
+                {t('Securing webhook endpoint and anchoring')}<br />{t('identity to')} <span className="text-[#4B3EEF] font-semibold">@Base</span>.
               </p>
 
               {/* Progress steps */}
@@ -195,7 +198,7 @@ await agent.identity.mintPassport({
                         className="h-1.5 w-1.5 rounded-full bg-[#4B3EEF]"
                       />
                     </motion.div>
-                    <span className="text-xs text-gray-400 font-mono">{label}</span>
+                    <span className="text-xs text-gray-400 font-mono">{t(label)}</span>
                   </motion.div>
                 ))}
               </div>
@@ -223,7 +226,7 @@ await agent.identity.mintPassport({
               >
                 <CheckCircle className="h-6 w-6 text-green-400" />
               </motion.div>
-              <h3 className="text-lg font-bold text-white">Deployment Successful</h3>
+              <h3 className="text-lg font-bold text-white">{t('Deployment Successful')}</h3>
             </motion.div>
 
             {/* Passport card */}
@@ -254,11 +257,11 @@ await agent.identity.mintPassport({
                 className="flex-1 bg-gradient-to-r from-[#4B3EEF] to-[#7C6FF7] text-white font-bold py-3 px-5 rounded-xl shadow-lg hover:shadow-indigo-500/30 hover:scale-[1.02] transition-all flex items-center justify-center gap-2"
               >
                 <Shield className="h-4 w-4" />
-                Go to Agent Hub
+                {t('Go to Agent Hub')}
               </button>
               <button className="flex-1 border border-white/20 text-white/80 font-semibold py-3 px-5 rounded-xl hover:bg-white/10 transition-all flex items-center justify-center gap-2">
                 <ExternalLink className="h-4 w-4" />
-                View on BaseScan
+                {t('View on BaseScan')}
               </button>
             </motion.div>
           </motion.div>
@@ -270,6 +273,7 @@ await agent.identity.mintPassport({
 
 // ── Page ───────────────────────────────────────────────────────────────────────
 export function CreateAgent() {
+  const { t } = useTranslation();
   const [stakingAmount, setStakingAmount] = useState(0);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [mintStep, setMintStep] = useState<null | 'loading' | 'success'>(null);
@@ -299,15 +303,15 @@ export function CreateAgent() {
 
   const handleDeploy = async () => {
     if (!address) {
-      showError('Connect a wallet first');
+      showError(t('Connect a wallet first'));
       return;
     }
     if (!agentName.trim()) {
-      showError('Agent name is required');
+      showError(t('Agent name is required'));
       return;
     }
     if (selectedTags.length === 0) {
-      showError('Pick at least one specialty');
+      showError(t('Pick at least one specialty'));
       return;
     }
     setMintStep('loading');
@@ -334,9 +338,9 @@ export function CreateAgent() {
       });
       setMintStep('success');
     } catch (err: any) {
-      const msg = err?.shortMessage || err?.message || 'Failed to mint Agent Passport';
+      const msg = err?.shortMessage || err?.message || t('Failed to mint Agent Passport');
       if (typeof msg === 'string' && msg.includes('Passport exists')) {
-        showError('You already have a passport — opening Agent Hub.');
+        showError(t('You already have a passport — opening Agent Hub.'));
         setMintStep(null);
         navigate('/agent-center');
         return;
@@ -366,7 +370,7 @@ export function CreateAgent() {
     navigate('/agent-center');
   };
 
-  const primarySkill = selectedTags[0] || 'General';
+  const primarySkill = selectedTags[0] || t('General');
 
   return (
     <main className="flex-1 overflow-y-auto p-4 md:p-8">
@@ -378,8 +382,8 @@ export function CreateAgent() {
             <Bot className="h-6 w-6 text-white" />
           </div>
           <div>
-            <h2 className="text-2xl md:text-3xl font-bold text-[#1A1B25]">Deploy your AI Agent</h2>
-            <p className="text-sm text-gray-600">Free deployment on Base Network</p>
+            <h2 className="text-2xl md:text-3xl font-bold text-[#1A1B25]">{t('Deploy your AI Agent')}</h2>
+            <p className="text-sm text-gray-600">{t('Free deployment on Base Network')}</p>
           </div>
         </div>
       </div>
@@ -392,22 +396,22 @@ export function CreateAgent() {
           <div className="mb-8">
             <div className="flex items-center gap-2 mb-4">
               <Bot className="h-5 w-5 text-indigo-600" />
-              <h3 className="text-lg font-semibold text-[#1A1B25]">Agent Identity</h3>
+              <h3 className="text-lg font-semibold text-[#1A1B25]">{t('Agent Identity')}</h3>
             </div>
             <div className="space-y-4">
               <div>
-                <label htmlFor="agent-name" className="block text-sm font-medium text-gray-700 mb-2">Agent Name *</label>
+                <label htmlFor="agent-name" className="block text-sm font-medium text-gray-700 mb-2">{t('Agent Name *')}</label>
                 <input
-                  id="agent-name" type="text" placeholder="e.g., CodeBot3000"
+                  id="agent-name" type="text" placeholder={t('e.g., CodeBot3000')}
                   value={agentName} onChange={(e) => setAgentName(e.target.value)}
                   className="w-full px-4 py-3 rounded-xl border border-indigo-200 bg-white/60 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
                 />
               </div>
               <div>
-                <label htmlFor="agent-bio" className="block text-sm font-medium text-gray-700 mb-2">Bio & Description *</label>
+                <label htmlFor="agent-bio" className="block text-sm font-medium text-gray-700 mb-2">{t('Bio & Description *')}</label>
                 <textarea
                   id="agent-bio" rows={4}
-                  placeholder="Describe your agent's capabilities, unique features, and what makes it special..."
+                  placeholder={t("Describe your agent's capabilities, unique features, and what makes it special...")}
                   value={agentBio} onChange={(e) => setAgentBio(e.target.value)}
                   className="w-full px-4 py-3 rounded-xl border border-indigo-200 bg-white/60 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all resize-none"
                 />
@@ -419,9 +423,9 @@ export function CreateAgent() {
           <div className="mb-8">
             <div className="flex items-center gap-2 mb-4">
               <Tag className="h-5 w-5 text-indigo-600" />
-              <h3 className="text-lg font-semibold text-[#1A1B25]">Specialty Tags</h3>
+              <h3 className="text-lg font-semibold text-[#1A1B25]">{t('Specialty Tags')}</h3>
             </div>
-            <p className="text-sm text-gray-600 mb-4">Select skills to improve mission matching (max 5)</p>
+            <p className="text-sm text-gray-600 mb-4">{t('Select skills to improve mission matching (max 5)')}</p>
             <div className="flex flex-wrap gap-2">
               {specialtyTags.map((tag) => (
                 <button
@@ -433,28 +437,28 @@ export function CreateAgent() {
                       : 'bg-white/60 text-gray-700 border border-indigo-200 hover:border-indigo-400'
                   } ${!selectedTags.includes(tag) && selectedTags.length >= 5 ? 'opacity-50 cursor-not-allowed' : 'hover:scale-105'}`}
                 >
-                  {tag}
+                  {t(tag)}
                 </button>
               ))}
             </div>
-            <p className="text-xs text-gray-500 mt-2">{selectedTags.length}/5 tags selected</p>
+            <p className="text-xs text-gray-500 mt-2">{t('{{count}}/5 tags selected', { count: selectedTags.length })}</p>
           </div>
 
           {/* Connection Endpoint */}
           <div className="mb-8">
             <div className="flex items-center gap-2 mb-4">
               <LinkIcon className="h-5 w-5 text-indigo-600" />
-              <h3 className="text-lg font-semibold text-[#1A1B25]">Connection Endpoint</h3>
+              <h3 className="text-lg font-semibold text-[#1A1B25]">{t('Connection Endpoint')}</h3>
             </div>
             <div>
-              <label htmlFor="webhook-url" className="block text-sm font-medium text-gray-700 mb-2">API/Webhook URL *</label>
+              <label htmlFor="webhook-url" className="block text-sm font-medium text-gray-700 mb-2">{t('API/Webhook URL *')}</label>
               <input
                 id="webhook-url" type="url"
                 placeholder="https://your-agent-endpoint.com/api/missions"
                 value={webhookUrl} onChange={(e) => setWebhookUrl(e.target.value)}
                 className="w-full px-4 py-3 rounded-xl border border-indigo-200 bg-white/60 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
               />
-              <p className="text-xs text-gray-500 mt-2">This endpoint will receive mission requests and payloads</p>
+              <p className="text-xs text-gray-500 mt-2">{t('This endpoint will receive mission requests and payloads')}</p>
             </div>
           </div>
 
@@ -462,13 +466,13 @@ export function CreateAgent() {
           <div className="mb-8 rounded-xl bg-gradient-to-br from-[#4B3EEF]/10 to-[#3D32D9]/5 border border-[#4B3EEF]/30 p-6">
             <div className="flex items-center gap-2 mb-4">
               <Sparkles className="h-5 w-5 text-[#4B3EEF]" />
-              <h3 className="text-lg font-semibold text-[#1A1B25]">Boost Visibility (Optional)</h3>
+              <h3 className="text-lg font-semibold text-[#1A1B25]">{t('Boost Visibility (Optional)')}</h3>
             </div>
-            <p className="text-sm text-gray-700 mb-4">Stake $TASK to increase your agent's reputation and get higher priority in mission matching</p>
+            <p className="text-sm text-gray-700 mb-4">{t("Stake $TASK to increase your agent's reputation and get higher priority in mission matching")}</p>
             <div className="space-y-4">
               <div>
                 <div className="flex justify-between items-center mb-2">
-                  <label className="text-sm font-medium text-gray-700">Staking Amount</label>
+                  <label className="text-sm font-medium text-gray-700">{t('Staking Amount')}</label>
                   <span className="text-lg font-bold text-indigo-600">{stakingAmount.toLocaleString()} $TASK</span>
                 </div>
                 <input
@@ -487,19 +491,19 @@ export function CreateAgent() {
                 <div className="rounded-lg bg-white/80 p-4 border border-[#4B3EEF]/30">
                   <div className="flex items-center gap-2 mb-2">
                     <DollarSign className="h-4 w-4 text-green-600" />
-                    <span className="text-sm font-semibold text-gray-700">Estimated Benefits:</span>
+                    <span className="text-sm font-semibold text-gray-700">{t('Estimated Benefits:')}</span>
                   </div>
                   <ul className="space-y-1 text-sm text-gray-600">
-                    <li>• Reputation Multiplier: x{(1.25 + ((stakingAmount - 25000) / 75000) * 0.75).toFixed(2)}</li>
-                    <li>• Priority Ranking: {stakingAmount < 40000 ? 'Standard' : stakingAmount < 70000 ? 'High' : 'Premium'}</li>
-                    <li>• Weekly Rewards: ~{(stakingAmount * 0.05).toLocaleString()} $TASK</li>
+                    <li>• {t('Reputation Multiplier: x{{value}}', { value: (1.25 + ((stakingAmount - 25000) / 75000) * 0.75).toFixed(2) })}</li>
+                    <li>• {t('Priority Ranking: {{tier}}', { tier: stakingAmount < 40000 ? t('Standard') : stakingAmount < 70000 ? t('High') : t('Premium') })}</li>
+                    <li>• {t('Weekly Rewards: ~{{amount}} $TASK', { amount: (stakingAmount * 0.05).toLocaleString() })}</li>
                   </ul>
                 </div>
               )}
               {stakingAmount >= 25000 && (
                 <button className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold py-3 px-6 rounded-xl shadow-md hover:shadow-lg hover:scale-[1.02] transition-all duration-300 flex items-center justify-center gap-2">
                   <ShoppingCart className="h-5 w-5" />
-                  Buy $TASK
+                  {t('Buy $TASK')}
                 </button>
               )}
             </div>
@@ -512,7 +516,7 @@ export function CreateAgent() {
             whileTap={{ scale: 0.98 }}
           >
             <Bot className="h-5 w-5" />
-            Deploy on @Base &amp; Mint On-chain Passport
+            {t('Deploy on @Base & Mint On-chain Passport')}
           </motion.button>
         </div>
       </div>

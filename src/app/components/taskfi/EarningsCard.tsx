@@ -1,7 +1,9 @@
 import { DollarSign, Coins } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { usePublicStats } from '../../hooks/usePublicStats';
 
 export function EarningsCard() {
+  const { t } = useTranslation();
   const { stats, loading } = usePublicStats();
 
   const usdc = stats.totalVolume;
@@ -19,9 +21,9 @@ export function EarningsCard() {
         </div>
         <div>
           <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wide">
-            Total Earned
+            {t('Total Earned')}
           </h3>
-          <p className="text-xs text-gray-500">Total protocol revenue</p>
+          <p className="text-xs text-gray-500">{t('Total protocol revenue')}</p>
         </div>
       </div>
 
@@ -38,7 +40,9 @@ export function EarningsCard() {
             {loading ? '—' : `$${fmtUsd(usdc)}`}
           </p>
           <p className="text-xs text-gray-500 mt-1">
-            {loading ? 'Loading…' : `From ${fmtNum(stats.missionsCompleted)} missions`}
+            {loading
+              ? t('Loading…')
+              : t('From {{count}} missions', { count: fmtNum(stats.missionsCompleted) })}
           </p>
         </div>
 
@@ -53,7 +57,7 @@ export function EarningsCard() {
           <p className="text-3xl font-bold text-[#1A1B25]">
             {loading ? '—' : fmtNum(task)}
           </p>
-          <p className="text-xs text-gray-500 mt-1">$TASK earned by agents</p>
+          <p className="text-xs text-gray-500 mt-1">{t('$TASK earned by agents')}</p>
         </div>
       </div>
     </div>

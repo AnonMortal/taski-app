@@ -1,5 +1,6 @@
 import { Target, DollarSign, TrendingUp, Bot, Star, Clock, Users, Plus, Circle } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import { useMissions } from '../contexts/MissionsContext';
 import { api } from '../../lib/api';
@@ -32,6 +33,7 @@ interface TopAgent {
 }
 
 export function Enterprise() {
+  const { t } = useTranslation();
   const { missions: userMissions } = useMissions();
 
   const [analytics, setAnalytics] = useState<Analytics | null>(null);
@@ -145,8 +147,8 @@ export function Enterprise() {
             <Users className="h-6 w-6 text-white" />
           </div>
           <div>
-            <h2 className="text-2xl md:text-3xl font-bold text-[#1A1B25]">Mission Control</h2>
-            <p className="text-sm text-gray-600">Manage your missions and track performance</p>
+            <h2 className="text-2xl md:text-3xl font-bold text-[#1A1B25]">{t('Mission Control')}</h2>
+            <p className="text-sm text-gray-600">{t('Manage your missions and track performance')}</p>
           </div>
         </div>
 
@@ -157,8 +159,8 @@ export function Enterprise() {
         >
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-white text-xl font-bold mb-1">Ready to Start a New Mission?</h3>
-              <p className="text-white/90 text-sm">Post your task and connect with top AI agents</p>
+              <h3 className="text-white text-xl font-bold mb-1">{t('Ready to Start a New Mission?')}</h3>
+              <p className="text-white/90 text-sm">{t('Post your task and connect with top AI agents')}</p>
             </div>
             <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm">
               <Plus className="h-8 w-8 text-white" />
@@ -171,7 +173,7 @@ export function Enterprise() {
       <div className="mb-8">
         <h3 className="text-lg font-bold text-[#1A1B25] mb-4 flex items-center gap-2">
           <TrendingUp className="h-5 w-5 text-indigo-600" />
-          Performance Analytics
+          {t('Performance Analytics')}
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
           {/* Total Spent */}
@@ -180,7 +182,7 @@ export function Enterprise() {
               <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-green-100">
                 <DollarSign className="h-5 w-5 text-green-600" />
               </div>
-              <span className="text-sm font-medium text-gray-600">Total USDC Spent</span>
+              <span className="text-sm font-medium text-gray-600">{t('Total USDC Spent')}</span>
             </div>
             <p className="text-3xl font-bold text-green-700">
               {analytics ? `$${analytics.totalSpent.toLocaleString()}` : '—'}
@@ -193,7 +195,7 @@ export function Enterprise() {
               <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100">
                 <Target className="h-5 w-5 text-blue-600" />
               </div>
-              <span className="text-sm font-medium text-gray-600">Active Missions</span>
+              <span className="text-sm font-medium text-gray-600">{t('Active Missions')}</span>
             </div>
             <p className="text-3xl font-bold text-blue-700">{analytics ? analytics.activeMissions : '—'}</p>
           </div>
@@ -204,7 +206,7 @@ export function Enterprise() {
               <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-100">
                 <Target className="h-5 w-5 text-purple-600" />
               </div>
-              <span className="text-sm font-medium text-gray-600">Completed</span>
+              <span className="text-sm font-medium text-gray-600">{t('Completed')}</span>
             </div>
             <p className="text-3xl font-bold text-purple-700">{analytics ? analytics.completedMissions : '—'}</p>
           </div>
@@ -215,7 +217,7 @@ export function Enterprise() {
               <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-100">
                 <Star className="h-5 w-5 text-amber-600" />
               </div>
-              <span className="text-sm font-medium text-gray-600">Avg. Rating</span>
+              <span className="text-sm font-medium text-gray-600">{t('Avg. Rating')}</span>
             </div>
             <div className="flex items-center gap-2">
               <p className="text-3xl font-bold text-amber-700">
@@ -231,14 +233,14 @@ export function Enterprise() {
       <div className="mb-8">
         <h3 className="text-lg font-bold text-[#1A1B25] mb-4 flex items-center gap-2">
           <Bot className="h-5 w-5 text-indigo-600" />
-          Top Performing Agents
+          {t('Top Performing Agents')}
         </h3>
         <div className="rounded-xl border border-indigo-200/40 bg-white/80 backdrop-blur-md p-6 shadow-lg">
           {agentsLoading && topAgents.length === 0 && (
-            <p className="text-sm text-gray-400 py-6 text-center">Loading agents…</p>
+            <p className="text-sm text-gray-400 py-6 text-center">{t('Loading agents…')}</p>
           )}
           {!agentsLoading && topAgents.length === 0 && (
-            <p className="text-sm text-gray-400 py-6 text-center">No agent performance data yet.</p>
+            <p className="text-sm text-gray-400 py-6 text-center">{t('No agent performance data yet.')}</p>
           )}
           <div className="space-y-4">
             {topAgents.map((agent, index) => (
@@ -262,15 +264,15 @@ export function Enterprise() {
                 </div>
                 <div className="flex items-center gap-6">
                   <div className="text-center">
-                    <p className="text-xs text-gray-600">Completed</p>
+                    <p className="text-xs text-gray-600">{t('Completed')}</p>
                     <p className="text-lg font-bold text-indigo-700">{agent.completedForYou}</p>
                   </div>
                   <div className="text-center">
-                    <p className="text-xs text-gray-600">Success</p>
+                    <p className="text-xs text-gray-600">{t('Success')}</p>
                     <p className="text-lg font-bold text-green-700">{agent.successRate}%</p>
                   </div>
                   <div className="text-center">
-                    <p className="text-xs text-gray-600">Rating</p>
+                    <p className="text-xs text-gray-600">{t('Rating')}</p>
                     <div className="flex items-center gap-1">
                       <Star className="h-4 w-4 fill-amber-500 text-amber-500" />
                       <p className="text-lg font-bold text-amber-700">
@@ -289,12 +291,12 @@ export function Enterprise() {
       <div className="mb-8">
         <h3 className="text-lg font-bold text-[#1A1B25] mb-4 flex items-center gap-2">
           <Target className="h-5 w-5 text-indigo-600" />
-          Your Posted Missions
+          {t('Your Posted Missions')}
         </h3>
         <div className="space-y-4">
           {postedMissions.length === 0 && (
             <div className="rounded-xl border border-indigo-200/40 bg-white/80 backdrop-blur-md p-8 shadow-lg text-center">
-              <p className="text-sm text-gray-400">No missions posted yet. Post your first mission to get started.</p>
+              <p className="text-sm text-gray-400">{t('No missions posted yet. Post your first mission to get started.')}</p>
             </div>
           )}
           {postedMissions.map((mission) => (
@@ -311,14 +313,14 @@ export function Enterprise() {
                       <div className="flex items-center gap-3 text-sm text-gray-600">
                         <span className="flex items-center gap-1">
                           <Clock className="h-3.5 w-3.5" />
-                          Posted {mission.postedDate}
+                          {t('Posted {{date}}', { date: mission.postedDate })}
                         </span>
                         <span>•</span>
-                        <span>Due: {mission.deadline}</span>
+                        <span>{t('Due: {{deadline}}', { deadline: mission.deadline === 'Completed' ? t('Completed') : mission.deadline })}</span>
                       </div>
                     </div>
                     <span className={`px-3 py-1 rounded-full text-xs font-bold ${getStatusColor(mission.status)}`}>
-                      {mission.status}
+                      {t(mission.status)}
                     </span>
                   </div>
 
@@ -326,21 +328,21 @@ export function Enterprise() {
                   {mission.agent ? (
                     <div className="flex items-center gap-2 mb-3 p-3 rounded-lg bg-indigo-50/50 border border-indigo-100">
                       <Bot className="h-4 w-4 text-indigo-600" />
-                      <span className="text-sm text-gray-600">Assigned to:</span>
+                      <span className="text-sm text-gray-600">{t('Assigned to:')}</span>
                       <span className="text-sm font-bold text-indigo-700">{mission.agent}</span>
                     </div>
                   ) : (
                     <div className="flex items-center gap-2 mb-3 p-3 rounded-lg bg-amber-50/50 border border-amber-100">
                       <Clock className="h-4 w-4 text-amber-600" />
-                      <span className="text-sm text-amber-700 font-medium">Waiting for agent applications...</span>
+                      <span className="text-sm text-amber-700 font-medium">{t('Waiting for agent applications...')}</span>
                     </div>
                   )}
 
                   {/* Bounty */}
                   <div className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200">
                     <DollarSign className="h-4 w-4 text-green-600" />
-                    <span className="text-sm text-gray-600">Bounty:</span>
-                    <span className="text-base font-bold text-green-700">${mission.bounty} USDC</span>
+                    <span className="text-sm text-gray-600">{t('Bounty:')}</span>
+                    <span className="text-base font-bold text-green-700">{t('${{amount}} USDC', { amount: mission.bounty })}</span>
                   </div>
                 </div>
 
@@ -348,9 +350,9 @@ export function Enterprise() {
                 <div className="lg:col-span-5">
                   <div className="rounded-lg bg-gradient-to-br from-purple-50/80 to-indigo-50/60 border border-purple-200 p-4 h-full">
                     <div className="flex items-center justify-between mb-3">
-                      <h5 className="text-sm font-bold text-gray-700">Consensus Jury Status</h5>
+                      <h5 className="text-sm font-bold text-gray-700">{t('Consensus Jury Status')}</h5>
                       <span className="text-xs font-semibold text-purple-700">
-                        {mission.juryConsensus.filter(j => j.status === 'approved').length}/5 Approved
+                        {t('{{count}}/5 Approved', { count: mission.juryConsensus.filter(j => j.status === 'approved').length })}
                       </span>
                     </div>
 
@@ -377,12 +379,12 @@ export function Enterprise() {
                           : isRejected
                             ? 'text-red-600'
                             : 'text-gray-400';
-                        const label = isApproved ? '✓ Approved' : isRejected ? '✗ Rejected' : 'Pending…';
+                        const label = isApproved ? t('✓ Approved') : isRejected ? t('✗ Rejected') : t('Pending…');
                         return (
                           <div key={jury.model} className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
                               <Circle className={`h-3 w-3 ${dotClass}`} />
-                              <span className="text-sm text-gray-700">{jury.model}</span>
+                              <span className="text-sm text-gray-700">{t(jury.model)}</span>
                             </div>
                             <span className={`text-xs font-semibold ${textClass}`}>{label}</span>
                           </div>

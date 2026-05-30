@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { KeyRound, Download, Copy, Check, ArrowLeft, Eye, EyeOff } from 'lucide-react';
 import { useWallet } from '../../lib/wallet-context';
 import { showError, showSuccess } from '../../lib/toast';
@@ -7,6 +8,7 @@ import taskfiLogo from '@/imports/logo_taskfi.png';
 type Step = 'choose' | 'create-password' | 'show-seed' | 'import';
 
 export function WalletSetup() {
+  const { t } = useTranslation();
   const wallet = useWallet();
   const [step, setStep] = useState<Step>('choose');
   const [password, setPassword] = useState('');
@@ -22,8 +24,8 @@ export function WalletSetup() {
   const [showImportValue, setShowImportValue] = useState(false);
 
   async function handleCreate() {
-    if (password.length < 8) { showError('Password must be at least 8 characters'); return; }
-    if (password !== confirmPassword) { showError('Passwords do not match'); return; }
+    if (password.length < 8) { showError(t('Password must be at least 8 characters')); return; }
+    if (password !== confirmPassword) { showError(t('Passwords do not match')); return; }
     setLoading(true);
     try {
       const data = await wallet.create(password);
@@ -44,7 +46,7 @@ export function WalletSetup() {
       setSeedPhrase('');
       setPassword('');
       setConfirmPassword('');
-      showSuccess('Wallet created!');
+      showSuccess(t('Wallet created!'));
     } catch (err: any) {
       showError(err.message);
     } finally {
@@ -53,9 +55,9 @@ export function WalletSetup() {
   }
 
   async function handleImport() {
-    if (!importValue.trim()) { showError('Enter a seed phrase or private key'); return; }
-    if (password.length < 8) { showError('Password must be at least 8 characters'); return; }
-    if (password !== confirmPassword) { showError('Passwords do not match'); return; }
+    if (!importValue.trim()) { showError(t('Enter a seed phrase or private key')); return; }
+    if (password.length < 8) { showError(t('Password must be at least 8 characters')); return; }
+    if (password !== confirmPassword) { showError(t('Passwords do not match')); return; }
     setLoading(true);
     try {
       if (importMode === 'seed') {
@@ -67,9 +69,9 @@ export function WalletSetup() {
       setImportValue('');
       setPassword('');
       setConfirmPassword('');
-      showSuccess('Wallet imported successfully!');
+      showSuccess(t('Wallet imported successfully!'));
     } catch {
-      showError('Invalid ' + (importMode === 'seed' ? 'seed phrase' : 'private key'));
+      showError(importMode === 'seed' ? t('Invalid seed phrase') : t('Invalid private key'));
     } finally {
       setLoading(false);
     }
@@ -77,7 +79,7 @@ export function WalletSetup() {
 
   function copySeed() {
     navigator.clipboard.writeText(seedPhrase);
-    showSuccess('Seed phrase copied! Clear your clipboard after pasting.');
+    showSuccess(t('Seed phrase copied! Clear your clipboard after pasting.'));
   }
 
   return (
@@ -89,7 +91,7 @@ export function WalletSetup() {
             <img src={taskfiLogo} alt="TaskFi" className="h-9 w-9 object-contain" />
           </div>
           <h1 className="text-3xl font-bold tracking-tight text-[#1A1B25]">TaskFi</h1>
-          <p className="text-gray-500 mt-1">Embedded Wallet</p>
+          <p className="text-gray-500 mt-1">{t('Embedded Wallet')}</p>
         </div>
 
         {/* Step: Choose */}
@@ -104,8 +106,8 @@ export function WalletSetup() {
                   <KeyRound className="h-6 w-6" />
                 </div>
                 <div>
-                  <p className="text-lg font-bold text-[#1A1B25]">Create New Wallet</p>
-                  <p className="text-sm text-gray-500">Generate a new wallet with a seed phrase</p>
+                  <p className="text-lg font-bold text-[#1A1B25]">{t('Create New Wallet')}</p>
+                  <p className="text-sm text-gray-500">{t('Generate a new wallet with a seed phrase')}</p>
                 </div>
               </div>
             </button>
@@ -119,8 +121,8 @@ export function WalletSetup() {
                   <Download className="h-6 w-6" />
                 </div>
                 <div>
-                  <p className="text-lg font-bold text-[#1A1B25]">Import Existing Wallet</p>
-                  <p className="text-sm text-gray-500">Use a seed phrase or private key</p>
+                  <p className="text-lg font-bold text-[#1A1B25]">{t('Import Existing Wallet')}</p>
+                  <p className="text-sm text-gray-500">{t('Use a seed phrase or private key')}</p>
                 </div>
               </div>
             </button>
@@ -131,16 +133,16 @@ export function WalletSetup() {
         {step === 'create-password' && (
           <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-[0_8px_30px_-8px_rgba(73,63,238,0.14)]">
             <button onClick={() => { setStep('choose'); setPassword(''); setConfirmPassword(''); }} className="flex items-center gap-1 text-sm text-gray-500 hover:text-[#493FEE] mb-4 transition-colors">
-              <ArrowLeft className="h-4 w-4" /> Back
+              <ArrowLeft className="h-4 w-4" /> {t('Back')}
             </button>
-            <h2 className="text-xl font-bold tracking-tight text-[#1A1B25] mb-1">Set a Password</h2>
-            <p className="text-sm text-gray-500 mb-6">This password encrypts your wallet in this browser. You'll need it each time you visit.</p>
+            <h2 className="text-xl font-bold tracking-tight text-[#1A1B25] mb-1">{t('Set a Password')}</h2>
+            <p className="text-sm text-gray-500 mb-6">{t("This password encrypts your wallet in this browser. You'll need it each time you visit.")}</p>
 
             <div className="space-y-4">
               <div className="relative">
                 <input
                   type={showPassword ? 'text' : 'password'}
-                  placeholder="Password (min. 8 characters)"
+                  placeholder={t('Password (min. 8 characters)')}
                   value={password}
                   onChange={e => setPassword(e.target.value)}
                   className="w-full rounded-xl border border-[#A5A0F6]/40 bg-white px-4 py-3 pr-10 outline-none transition-all placeholder:text-gray-400 focus:border-[#493FEE] focus:ring-2 focus:ring-[#493FEE]/15"
@@ -151,7 +153,7 @@ export function WalletSetup() {
               </div>
               <input
                 type={showPassword ? 'text' : 'password'}
-                placeholder="Confirm password"
+                placeholder={t('Confirm password')}
                 value={confirmPassword}
                 onChange={e => setConfirmPassword(e.target.value)}
                 className="w-full rounded-xl border border-[#A5A0F6]/40 bg-white px-4 py-3 outline-none transition-all placeholder:text-gray-400 focus:border-[#493FEE] focus:ring-2 focus:ring-[#493FEE]/15"
@@ -161,7 +163,7 @@ export function WalletSetup() {
                 disabled={loading}
                 className="w-full rounded-xl bg-[#493FEE] py-3 font-semibold text-white shadow-lg shadow-[#493FEE]/20 transition-all duration-200 hover:bg-[#3a32be] hover:shadow-xl hover:shadow-[#493FEE]/30 disabled:opacity-50 disabled:shadow-none"
               >
-                {loading ? 'Creating...' : 'Create Wallet'}
+                {loading ? t('Creating...') : t('Create Wallet')}
               </button>
             </div>
           </div>
@@ -170,10 +172,10 @@ export function WalletSetup() {
         {/* Step: Show Seed Phrase */}
         {step === 'show-seed' && (
           <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-[0_8px_30px_-8px_rgba(73,63,238,0.14)]">
-            <h2 className="text-xl font-bold tracking-tight text-[#1A1B25] mb-1">Your Recovery Phrase</h2>
+            <h2 className="text-xl font-bold tracking-tight text-[#1A1B25] mb-1">{t('Your Recovery Phrase')}</h2>
             <div className="rounded-xl bg-red-50 border border-red-200 p-3 mb-4">
               <p className="text-sm text-red-700 font-medium">
-                Write down these 12 words and keep them safe. This is the ONLY way to recover your wallet. Never share them with anyone.
+                {t('Write down these 12 words and keep them safe. This is the ONLY way to recover your wallet. Never share them with anyone.')}
               </p>
             </div>
 
@@ -190,7 +192,7 @@ export function WalletSetup() {
               onClick={copySeed}
               className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 border-[#A5A0F6] text-sm font-semibold text-[#493FEE] transition-colors duration-200 hover:bg-[#A5A0F6]/10 mb-4"
             >
-              <Copy className="h-4 w-4" /> Copy to clipboard
+              <Copy className="h-4 w-4" /> {t('Copy to clipboard')}
             </button>
 
             <label className="flex items-start gap-3 mb-4 cursor-pointer">
@@ -200,7 +202,7 @@ export function WalletSetup() {
                 onChange={e => setSeedSaved(e.target.checked)}
                 className="mt-0.5 h-4 w-4 rounded border-gray-300 text-[#493FEE] focus:ring-[#493FEE]"
               />
-              <span className="text-sm text-gray-600">I have saved my recovery phrase in a safe place</span>
+              <span className="text-sm text-gray-600">{t('I have saved my recovery phrase in a safe place')}</span>
             </label>
 
             <button
@@ -208,7 +210,7 @@ export function WalletSetup() {
               disabled={!seedSaved || loading}
               className="w-full flex items-center justify-center gap-2 rounded-xl bg-[#493FEE] py-3 font-semibold text-white shadow-lg shadow-[#493FEE]/20 transition-all duration-200 hover:bg-[#3a32be] hover:shadow-xl hover:shadow-[#493FEE]/30 disabled:opacity-50 disabled:shadow-none"
             >
-              {loading ? 'Unlocking...' : <><Check className="h-4 w-4" /> Enter Dashboard</>}
+              {loading ? t('Unlocking...') : <><Check className="h-4 w-4" /> {t('Enter Dashboard')}</>}
             </button>
           </div>
         )}
@@ -217,9 +219,9 @@ export function WalletSetup() {
         {step === 'import' && (
           <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-[0_8px_30px_-8px_rgba(73,63,238,0.14)]">
             <button onClick={() => { setStep('choose'); setImportValue(''); setPassword(''); setConfirmPassword(''); }} className="flex items-center gap-1 text-sm text-gray-500 hover:text-[#493FEE] mb-4 transition-colors">
-              <ArrowLeft className="h-4 w-4" /> Back
+              <ArrowLeft className="h-4 w-4" /> {t('Back')}
             </button>
-            <h2 className="text-xl font-bold tracking-tight text-[#1A1B25] mb-4">Import Wallet</h2>
+            <h2 className="text-xl font-bold tracking-tight text-[#1A1B25] mb-4">{t('Import Wallet')}</h2>
 
             {/* Toggle */}
             <div className="flex rounded-xl border border-[#A5A0F6]/40 p-1 mb-4">
@@ -227,20 +229,20 @@ export function WalletSetup() {
                 onClick={() => { setImportMode('seed'); setImportValue(''); }}
                 className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${importMode === 'seed' ? 'bg-[#493FEE] text-white' : 'text-gray-500 hover:text-[#493FEE]'}`}
               >
-                Seed Phrase
+                {t('Seed Phrase')}
               </button>
               <button
                 onClick={() => { setImportMode('key'); setImportValue(''); }}
                 className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${importMode === 'key' ? 'bg-[#493FEE] text-white' : 'text-gray-500 hover:text-[#493FEE]'}`}
               >
-                Private Key
+                {t('Private Key')}
               </button>
             </div>
 
             <div className="space-y-4">
               {importMode === 'seed' ? (
                 <textarea
-                  placeholder="Enter your 12 or 24 word seed phrase..."
+                  placeholder={t('Enter your 12 or 24 word seed phrase...')}
                   rows={3}
                   value={importValue}
                   onChange={e => setImportValue(e.target.value)}
@@ -250,7 +252,7 @@ export function WalletSetup() {
                 <div className="relative">
                   <input
                     type={showImportValue ? 'text' : 'password'}
-                    placeholder="Enter private key (0x...)"
+                    placeholder={t('Enter private key (0x...)')}
                     value={importValue}
                     onChange={e => setImportValue(e.target.value)}
                     className="w-full rounded-xl border border-[#A5A0F6]/40 bg-white px-4 py-3 pr-10 font-mono text-sm outline-none transition-all placeholder:text-gray-400 focus:border-[#493FEE] focus:ring-2 focus:ring-[#493FEE]/15"
@@ -264,7 +266,7 @@ export function WalletSetup() {
               <div className="relative">
                 <input
                   type={showPassword ? 'text' : 'password'}
-                  placeholder="Set a password (min. 8 characters)"
+                  placeholder={t('Set a password (min. 8 characters)')}
                   value={password}
                   onChange={e => setPassword(e.target.value)}
                   className="w-full rounded-xl border border-[#A5A0F6]/40 bg-white px-4 py-3 pr-10 outline-none transition-all placeholder:text-gray-400 focus:border-[#493FEE] focus:ring-2 focus:ring-[#493FEE]/15"
@@ -275,7 +277,7 @@ export function WalletSetup() {
               </div>
               <input
                 type={showPassword ? 'text' : 'password'}
-                placeholder="Confirm password"
+                placeholder={t('Confirm password')}
                 value={confirmPassword}
                 onChange={e => setConfirmPassword(e.target.value)}
                 className="w-full rounded-xl border border-[#A5A0F6]/40 bg-white px-4 py-3 outline-none transition-all placeholder:text-gray-400 focus:border-[#493FEE] focus:ring-2 focus:ring-[#493FEE]/15"
@@ -285,7 +287,7 @@ export function WalletSetup() {
                 disabled={loading}
                 className="w-full rounded-xl bg-[#493FEE] py-3 font-semibold text-white shadow-lg shadow-[#493FEE]/20 transition-all duration-200 hover:bg-[#3a32be] hover:shadow-xl hover:shadow-[#493FEE]/30 disabled:opacity-50 disabled:shadow-none"
               >
-                {loading ? 'Importing...' : 'Import Wallet'}
+                {loading ? t('Importing...') : t('Import Wallet')}
               </button>
             </div>
           </div>

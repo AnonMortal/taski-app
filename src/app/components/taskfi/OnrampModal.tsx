@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { CreditCard, X, CheckCircle, ShieldCheck, Loader2, Fuel, ShieldAlert, Mail } from 'lucide-react';
+import { CreditCard, X, CheckCircle, ShieldCheck, Loader2, Fuel, Mail } from 'lucide-react';
 import type { Address } from 'viem';
 import {
   ONRAMP_PROVIDER,
@@ -8,7 +8,6 @@ import {
   openCoinbaseOnramp,
   waitForFunds,
   checkOnrampEligibility,
-  type OnrampEligibility,
 } from '../../../lib/onramp';
 
 type ModalStep = 'form' | 'processing' | 'success' | 'error';
@@ -18,19 +17,18 @@ interface OnrampModalProps {
   amountUsdc: number;
   address: Address | null;
   usdc: Address | null;
-  /** Ensures a SIWE auth token exists before hitting the gas-grant endpoint. */
+  /** Ensures a SIWE auth token exists before hitting the backend. */
   ensureAuth: () => Promise<void>;
   onFunded: () => void;
   onClose: () => void;
 }
 
 /**
- * Card-to-USDC funding modal. Lets a web2 company top up its in-app wallet by
- * card so it can fund a mission, without ever touching crypto or gas:
- *   1. card payment delivers USDC to the user's own wallet,
- *   2. the project gas dispenser tops the wallet up with a little ETH,
- *   3. we poll the chain until both have landed, then resume.
- * In dev (mock provider) steps 1+2 are simulated by the backend dev-faucet.
+ * Card-to-USDC funding modal. The buyer enters their card and pays; the bounty
+ * USDC is delivered to their own wallet and the project covers gas. Card payment
+ * is gated to approved companies — a non-whitelisted company's card is declined
+ * (after submitting) with a "contact the project team" message, so the gating is
+ * presented as a normal card decline rather than exposing the allowlist.
  */
 export function OnrampModal({
   open,
@@ -43,42 +41,40 @@ export function OnrampModal({
 }: OnrampModalProps) {
   const [step, setStep] = useState<ModalStep>('form');
   const [message, setMessage] = useState('');
-  const [eligibility, setEligibility] = useState<OnrampEligibility | null>(null);
+  const [declined, setDeclined] = useState(false);
+  const [contactEmail, setContactEmail] = useState<string | null>(null);
 
   const isCoinbase = ONRAMP_PROVIDER === 'coinbase';
 
-  // On open, reset state and check whether this company (wallet) is whitelisted
-  // to pay by card. Non-whitelisted companies see a request-access message.
+  // Reset to the card form each time the modal opens.
   useEffect(() => {
     if (!open) return;
     setStep('form');
     setMessage('');
-    setEligibility(null);
-    if (!address) return;
-    let cancelled = false;
-    checkOnrampEligibility(address).then((e) => {
-      if (!cancelled) setEligibility(e);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [open, address]);
-
-  const checking = step === 'form' && eligibility === null;
-  const notWhitelisted = step === 'form' && eligibility !== null && !eligibility.whitelisted;
-  const showAmount = !checking && !notWhitelisted;
+    setDeclined(false);
+  }, [open]);
 
   const runPurchase = async () => {
     if (!address || !usdc) {
+      setDeclined(false);
       setStep('error');
       setMessage('Wallet or USDC config not ready. Reload and try again.');
       return;
     }
     setStep('processing');
     try {
-      // Make sure the backend will accept the gas-grant call.
-      setMessage('Authenticating your wallet…');
+      setMessage('Processing your card…');
       await ensureAuth();
+
+      // Card-payment allowlist: a non-approved company's card is declined.
+      const elig = await checkOnrampEligibility(address);
+      if (!elig.whitelisted) {
+        setContactEmail(elig.requestAccessEmail);
+        setDeclined(true);
+        setStep('error');
+        setMessage('Your card was not accepted. Please contact the project team.');
+        return;
+      }
 
       // 1) Card payment → USDC delivery.
       if (isCoinbase) {
@@ -94,6 +90,7 @@ export function OnrampModal({
       setMessage('Confirming funds on Base…');
       const funded = await waitForFunds({ address, usdc, amountUsdc });
       if (!funded) {
+        setDeclined(false);
         setStep('error');
         setMessage(
           'Funds did not arrive in time. If your card payment went through, wait a moment and retry.',
@@ -105,6 +102,7 @@ export function OnrampModal({
       setMessage('Funds received — finishing your mission…');
       setTimeout(onFunded, 900);
     } catch (err) {
+      setDeclined(false);
       setStep('error');
       setMessage(err instanceof Error ? err.message : 'Payment failed. Please try again.');
     }
@@ -114,8 +112,12 @@ export function OnrampModal({
     if (step === 'processing') return; // don't allow closing mid-payment
     setStep('form');
     setMessage('');
+    setDeclined(false);
     onClose();
   };
+
+  const inputClass =
+    'w-full px-3 py-2.5 rounded-lg border border-indigo-200 bg-white text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#4B3EEF] focus:border-transparent';
 
   return (
     <AnimatePresence>
@@ -159,97 +161,63 @@ export function OnrampModal({
 
             {/* Body */}
             <div className="p-5">
-              {/* Eligibility gate: checking → loading; not whitelisted → message. */}
-              {checking && (
-                <div className="py-8 flex flex-col items-center text-center">
-                  <Loader2 className="h-8 w-8 text-[#4B3EEF] animate-spin mb-3" />
-                  <p className="text-sm text-gray-600">Checking access…</p>
+              {/* Amount summary */}
+              <div className="rounded-xl bg-gradient-to-br from-indigo-50/80 to-[#4B3EEF]/5 border border-indigo-200 p-4 mb-5">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">You pay</span>
+                  <span className="text-xl font-bold text-[#1A1B25]">${amountUsdc.toFixed(2)}</span>
                 </div>
-              )}
-
-              {notWhitelisted && (
-                <div className="py-4 flex flex-col items-center text-center">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#4B3EEF]/10 mb-4">
-                    <ShieldAlert className="h-6 w-6 text-[#4B3EEF]" />
-                  </div>
-                  <h4 className="text-base font-bold text-[#1A1B25] mb-1">Card payment requires approval</h4>
-                  <p className="text-sm text-gray-600 mb-5">
-                    Paying by card is reserved for verified enterprises. Your company isn't
-                    whitelisted yet — request access and we'll review it.
-                  </p>
-                  <a
-                    href={`mailto:${eligibility?.requestAccessEmail ?? 'access@taskfi.xyz'}?subject=${encodeURIComponent('Card payment access request')}&body=${encodeURIComponent(`Please whitelist my company for card payments.\nWallet: ${address ?? ''}`)}`}
-                    className="w-full font-bold py-3.5 px-6 rounded-xl flex items-center justify-center gap-2 bg-gradient-to-r from-[#4B3EEF] to-[#3D32D9] text-white hover:shadow-lg transition-all"
-                  >
-                    <Mail className="h-5 w-5" /> Request access
-                  </a>
-                  <button
-                    type="button"
-                    onClick={handleClose}
-                    className="mt-3 text-sm text-gray-500 hover:text-gray-700 transition-colors"
-                  >
-                    Maybe later
-                  </button>
+                <div className="mt-2 flex justify-between items-center text-xs text-gray-500">
+                  <span className="inline-flex items-center gap-1">
+                    <ShieldCheck className="h-3.5 w-3.5 text-green-600" /> {amountUsdc.toFixed(2)} USDC to your wallet
+                  </span>
+                  <span className="inline-flex items-center gap-1">
+                    <Fuel className="h-3.5 w-3.5 text-[#4B3EEF]" /> gas covered
+                  </span>
                 </div>
-              )}
+              </div>
 
-              {/* Amount summary (shown once eligible / during processing). */}
-              {showAmount && (
-                <div className="rounded-xl bg-gradient-to-br from-indigo-50/80 to-[#4B3EEF]/5 border border-indigo-200 p-4 mb-5">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600">You pay</span>
-                    <span className="text-xl font-bold text-[#1A1B25]">
-                      ${amountUsdc.toFixed(2)}
-                    </span>
-                  </div>
-                  <div className="mt-2 flex justify-between items-center text-xs text-gray-500">
-                    <span className="inline-flex items-center gap-1">
-                      <ShieldCheck className="h-3.5 w-3.5 text-green-600" /> {amountUsdc.toFixed(2)} USDC to your wallet
-                    </span>
-                    <span className="inline-flex items-center gap-1">
-                      <Fuel className="h-3.5 w-3.5 text-[#4B3EEF]" /> gas covered
-                    </span>
-                  </div>
-                </div>
-              )}
-
-              {step === 'form' && eligibility?.whitelisted && (
+              {step === 'form' && (
                 <>
                   {isCoinbase ? (
-                    <div className="space-y-4">
-                      <p className="text-sm text-gray-600">
-                        You'll complete your card payment securely with Coinbase. The USDC
-                        lands directly in your wallet — we cover the network gas.
-                      </p>
-                    </div>
+                    <p className="text-sm text-gray-600">
+                      You'll complete your card payment securely with Coinbase. The USDC
+                      lands directly in your wallet — we cover the network gas.
+                    </p>
                   ) : (
                     <div className="space-y-3">
-                      <p className="text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-                        Dev sandbox — no real charge. Test card is pre-filled.
-                      </p>
                       <div>
                         <label className="block text-xs font-medium text-gray-600 mb-1">Card number</label>
                         <input
-                          readOnly
-                          value="4242 4242 4242 4242"
-                          className="w-full px-3 py-2.5 rounded-lg border border-indigo-200 bg-white/70 text-sm text-gray-700"
+                          type="text"
+                          inputMode="numeric"
+                          autoComplete="cc-number"
+                          placeholder="1234 1234 1234 1234"
+                          defaultValue=""
+                          className={inputClass}
                         />
                       </div>
                       <div className="grid grid-cols-2 gap-3">
                         <div>
                           <label className="block text-xs font-medium text-gray-600 mb-1">Expiry</label>
                           <input
-                            readOnly
-                            value="12 / 34"
-                            className="w-full px-3 py-2.5 rounded-lg border border-indigo-200 bg-white/70 text-sm text-gray-700"
+                            type="text"
+                            inputMode="numeric"
+                            autoComplete="cc-exp"
+                            placeholder="MM / YY"
+                            defaultValue=""
+                            className={inputClass}
                           />
                         </div>
                         <div>
                           <label className="block text-xs font-medium text-gray-600 mb-1">CVC</label>
                           <input
-                            readOnly
-                            value="123"
-                            className="w-full px-3 py-2.5 rounded-lg border border-indigo-200 bg-white/70 text-sm text-gray-700"
+                            type="text"
+                            inputMode="numeric"
+                            autoComplete="cc-csc"
+                            placeholder="CVC"
+                            defaultValue=""
+                            className={inputClass}
                           />
                         </div>
                       </div>
@@ -285,13 +253,31 @@ export function OnrampModal({
               {step === 'error' && (
                 <div className="py-4 flex flex-col items-center text-center">
                   <p className="text-sm text-red-600 mb-4">{message}</p>
-                  <button
-                    type="button"
-                    onClick={runPurchase}
-                    className="w-full font-bold py-3 px-6 rounded-xl bg-gradient-to-r from-[#4B3EEF] to-[#3D32D9] text-white hover:shadow-lg transition-all"
-                  >
-                    Try again
-                  </button>
+                  {declined ? (
+                    <>
+                      <a
+                        href={`mailto:${contactEmail ?? 'access@taskfi.xyz'}?subject=${encodeURIComponent('Card payment — access request')}&body=${encodeURIComponent(`My card was declined for a TaskFi mission. Please enable card payments for my company.\nWallet: ${address ?? ''}`)}`}
+                        className="w-full font-bold py-3 px-6 rounded-xl flex items-center justify-center gap-2 bg-gradient-to-r from-[#4B3EEF] to-[#3D32D9] text-white hover:shadow-lg transition-all"
+                      >
+                        <Mail className="h-5 w-5" /> Contact the team
+                      </a>
+                      <button
+                        type="button"
+                        onClick={handleClose}
+                        className="mt-3 text-sm text-gray-500 hover:text-gray-700 transition-colors"
+                      >
+                        Close
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={runPurchase}
+                      className="w-full font-bold py-3 px-6 rounded-xl bg-gradient-to-r from-[#4B3EEF] to-[#3D32D9] text-white hover:shadow-lg transition-all"
+                    >
+                      Try again
+                    </button>
+                  )}
                 </div>
               )}
             </div>

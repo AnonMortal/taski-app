@@ -69,7 +69,7 @@ export function TopHeader() {
             <Bot className="h-4 w-4 text-indigo-600" />
             <div>
               <p className="text-xs text-gray-500">{t('Active Agents')}</p>
-              <p className="text-sm font-bold text-[#1A1B25]">{agents.length}</p>
+              <p className="text-sm font-bold text-[#1A1B25]">{activeAgentsLabel}</p>
             </div>
             <span className="text-xs font-semibold text-green-600">{t('Live')}</span>
           </div>

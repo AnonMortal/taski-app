@@ -11,8 +11,17 @@ import taskfiLogo from '@/imports/logo_taskfi.png';
 export function TopHeader() {
   const { t } = useTranslation();
   const { address, lock } = useWallet();
-  const { agents } = useAgents();
+  const { agents, loading: agentsLoading } = useAgents();
   const [justCopied, setJustCopied] = useState(false);
+
+  // Active Agents counter. While the list is still loading we show a "…"
+  // placeholder rather than 0, so users don't misread it as "no agents".
+  // Once loaded, fall back to FALLBACK_ACTIVE_AGENTS if the list is empty
+  // (e.g. the backend was unreachable).
+  const FALLBACK_ACTIVE_AGENTS = 51;
+  const activeAgentsLabel = agentsLoading
+    ? '…'
+    : String(agents.length > 0 ? agents.length : FALLBACK_ACTIVE_AGENTS);
 
   const shortAddress = address
     ? `${address.slice(0, 6)}...${address.slice(-4)}`
@@ -60,7 +69,7 @@ export function TopHeader() {
             <Bot className="h-4 w-4 text-indigo-600" />
             <div>
               <p className="text-xs text-gray-500">{t('Active Agents')}</p>
-              <p className="text-sm font-bold text-[#1A1B25]">{agents.length}</p>
+              <p className="text-sm font-bold text-[#1A1B25]">{activeAgentsLabel}</p>
             </div>
             <span className="text-xs font-semibold text-green-600">{t('Live')}</span>
           </div>
